@@ -11,3 +11,13 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+h1 {
+  font-size: 1em;
+}
+
+@media only screen and (min-width: 800px)  {
+  h1 {
+    font-size: 1.5em;
+  }
+}

@@ -104,13 +104,14 @@ function EventCollectionComponent(props) {
   const addEvent = (eventData) => {
     repository.addEvent(tenant, eventCollection, eventData);
   }
+
   const handleDelete = () => {
     setDeleteDialogOpen(false);
     repository.deleteEventCollection(tenant, eventCollection.key);
   }
 
   return (
-    <Paper className='paperEventCollection' style={{flexGrow: collapsed ? 0 : 1, minWidth: collapsed ? '5em' : '12em'}} >
+    <Paper className='paperEventCollection' style={{flexGrow: collapsed ? 0 : 1, minWidth: collapsed ? '2em' : '8em'}} >
       <div style={{display: 'flex', flexDirection: 'column'}}>
         <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
 
@@ -159,7 +160,7 @@ function EventCollectionComponent(props) {
         )}
 
         {collapsed && (
-          <h1 style={{writingMode: 'vertical-rl', textOrientation: 'mixed', height: '400px'}}>{eventCollection.title}</h1>
+          <h1 style={{writingMode: 'vertical-rl', textOrientation: 'mixed', height: '400px', marginRight: 0}}>{eventCollection.title}</h1>
         )}
 
       </div>
@@ -210,12 +211,13 @@ export function EventCollections(props) {
   const addCollection = (collectionData) => {
     repository.addEventCollection(tenant, collectionData)
   };
+  console.log(eventCollections[0].getEvents(edit).length)
 
   return (
     <div>
 
       <div style={{display: 'flex', flexDirection: 'row', wrap: 'wrap'}}>
-        {eventCollections.map(collection => (
+        {eventCollections.filter(c => (edit || (c.getEvents(edit).length > 0))).map(collection => (
           <EventCollectionComponent key={collection.key} tenant={tenant} eventCollection={collection} setEventCollection={setEventCollection} edit={edit}/>
         ))}
 
