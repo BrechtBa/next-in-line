@@ -64,6 +64,14 @@ export class Event {
       return 0;
     }
   }
+
+  getStartDate() {
+    if(this.started){
+      return this.startDate;
+    }
+    return this.plannedStartDate;
+  }
+
 }
 
 

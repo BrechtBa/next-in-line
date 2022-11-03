@@ -9,7 +9,7 @@ import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import CreateIcon from '@mui/icons-material/Create';
 import DeleteIcon from '@mui/icons-material/Delete';
-
+import './style.css';
 
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -41,69 +41,13 @@ function EventDuration(props){
   )
 }
 
-
-function EventContent(props) {
-  const event = props.event;
-
-  const formatDateTime = (date) => {
-    return date.toLocaleDateString("nl-BE") + ' ' + date.toLocaleTimeString("nl-BE")
-  }
-
-  const getStartDate = (event) => {
-    if(event.started){
-      return event.startDate;
-    }
-    return event.plannedStartDate;
-  }
-
+const formatDateTime = (date) => {
   return (
-    <div style={{display: 'flex', flexDirection: 'column'}}>
-      <h1 style={{marginTop: 0}}>{event.title}</h1>
-
-      <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
-        <div style={{flexGrow: 1}}>{formatDateTime(getStartDate(event))}</div>
-        <div><EventDuration event={event}/></div>
-      </div>
-
+    <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
+      <div style={{marginRight: '0.3em'}}>{date.toLocaleDateString("nl-BE")}</div>
+      <div style={{marginRight: '0.3em'}}>{date.toLocaleTimeString("nl-BE")}</div>
     </div>
-  )
-}
-
-
-export function EventWrapper(props) {
-  const event = props.event;
-  const children = props.children;
-
-  const getBackgroundColor = (event) => {
-    if(!event.started){
-      return 'rgb(255, 255, 255)';
-    }
-    if (event.finished) {
-      return 'rgb(235, 235, 235)';
-    }
-    if (event.started) {
-      return 'rgba(25, 118, 210, 0.3)';
-    }
-    return 'rgb(255, 255, 255)';
-  }
-
-  return (
-    <Paper style={{margin: '1em', padding: '0.5em', backgroundColor: getBackgroundColor(event)}}>
-      {children}
-    </Paper>
   );
-}
-
-
-export function ViewEvent(props) {
-  const event = props.event;
-
-  return (
-    <EventWrapper event={event}>
-      <EventContent event={event} />
-    </EventWrapper>
-  )
-
 }
 
 export function EditEventDialog(props) {
@@ -182,8 +126,9 @@ export function EditEventDialog(props) {
 }
 
 
-export function AdminEvent(props) {
+export function EventComponent(props) {
   const event = props.event;
+  const edit = props.edit || false;
   const setEvent = props.setEvent;
   const deleteEvent = props.deleteEvent;
 
@@ -195,41 +140,66 @@ export function AdminEvent(props) {
     deleteEvent(event.key);
   }
 
+  const getBackgroundColor = (event) => {
+    if(!event.started){
+      return 'rgb(255, 255, 255)';
+    }
+    if (event.finished) {
+      return 'rgb(235, 235, 235)';
+    }
+    if (event.started) {
+      return 'rgba(25, 118, 210, 0.3)';
+    }
+    return 'rgb(255, 255, 255)';
+  }
+
   return (
-    <EventWrapper event={event}>
-      <div style={{position: 'relative'}}>
-        <div style={{position: 'absolute', top: 0, right: 0}}>
-          <IconButton aria-label="Example" onClick={()=>setEditDialogOpen(true)}>
-            <CreateIcon />
-          </IconButton>
-          <IconButton aria-label="Example" onClick={()=>setDeleteDialogOpen(true)}>
-            <DeleteIcon />
-          </IconButton>
-
-        </div>
-
-        <EventContent event={event} />
-
-        <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end'}}>
-          <div>
-            {(!event.started || event.finished) && <Button onClick={() => setEvent(event.start())}>Start</Button>}
-            {(event.started && !event.finished) && <Button onClick={() => setEvent(event.finish())}>Finish</Button>}
+    <Paper className='paperEvent' style={{backgroundColor: getBackgroundColor(event)}}>
+      <div style={{display: 'flex', flexDirection: 'column'}}>
+        {edit && (
+          <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+            <IconButton aria-label="Example" onClick={()=>setEditDialogOpen(true)}>
+              <CreateIcon />
+            </IconButton>
+            <IconButton aria-label="Example" onClick={()=>setDeleteDialogOpen(true)}>
+              <DeleteIcon />
+            </IconButton>
           </div>
-        </div>
+        )}
 
-        <EditEventDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={eventData => setEvent(event.update(eventData))} event={event} />
+        <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
+          <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
+            <h1 style={{marginTop: 0}}>{event.title}</h1>
 
-        <Dialog open={deleteDialogOpen} handleClose={() => setDeleteDialogOpen(false)}>
-          <div style={{margin: '1em'}}>
-            <h1>Delete event?</h1>
-            <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
-              <Button onClick={handleDelete}>Delete</Button>
-              <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
+              <div style={{flexGrow: 1}}>{formatDateTime(event.getStartDate())}</div>
+              <div><EventDuration event={event}/></div>
             </div>
           </div>
-        </Dialog>
+
+          { edit && (
+            <div style={{alignSelf: 'flex-end'}}>
+              <div>
+                {(!event.started || event.finished) && <Button onClick={() => setEvent(event.start())}>Start</Button>}
+                {(event.started && !event.finished) && <Button onClick={() => setEvent(event.finish())}>Finish</Button>}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </EventWrapper>
+
+      <EditEventDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={eventData => setEvent(event.update(eventData))} event={event} />
+
+      <Dialog open={deleteDialogOpen} handleClose={() => setDeleteDialogOpen(false)}>
+        <div style={{margin: '1em'}}>
+          <h1>Delete event?</h1>
+          <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
+            <Button onClick={handleDelete}>Delete</Button>
+            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          </div>
+        </div>
+      </Dialog>
+    </Paper>
   )
 
 }

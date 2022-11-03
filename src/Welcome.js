@@ -32,7 +32,7 @@ export function Welcome() {
 
   return (
     <div style={{display: 'flex', justifyContent: 'center', marginTop: '5em'}}>
-      <Button onClick={() => createNewTenant()}>New</Button>
+      <Button onClick={() => createNewTenant()}>Create New View</Button>
     </div>
   );
 
