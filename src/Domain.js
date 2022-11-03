@@ -104,12 +104,8 @@ export class EventCollection {
     });
   }
 
-  getAllEvents() {
-    return this.events.sort(this.eventSorting);
-  }
-
-  getActiveEvents() {
-    return this.events.filter(e => !e.finished ).sort(this.eventSorting);
+  getEvents(finished: bool) {
+    return this.events.filter(e => finished || !e.finished ).sort(this.eventSorting);
   }
 
   eventSorting(a, b) {
