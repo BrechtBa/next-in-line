@@ -89,6 +89,9 @@ export class FirebaseEventRepository{
     });
   }
 
+  deleteEventCollection(tenant, key) {
+      set(ref(this.db, `tenantData/${tenant}/collections/${key}`), null);
+  }
 
   addEvent(tenant, collection, eventData) {
     push(ref(this.db, `tenantData/${tenant}/collections/${collection.key}/events`), {
@@ -101,6 +104,11 @@ export class FirebaseEventRepository{
       finished: eventData.finished,
     });
   }
+
+  deleteEvent(tenant, collection, key) {
+      set(ref(this.db, `tenantData/${tenant}/collections/${collection.key}/events/${key}`), null);
+  }
+
 }
 
 export const getRepository = () => {

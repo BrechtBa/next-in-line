@@ -6,6 +6,7 @@ import Fab from '@mui/material/Fab';
 import AddIcon from '@mui/icons-material/Add';
 import IconButton from '@mui/material/IconButton';
 import CreateIcon from '@mui/icons-material/Create';
+import DeleteIcon from '@mui/icons-material/Delete';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -97,7 +98,7 @@ function AdminEventCollection(props) {
 
   const [addEventDialogOpen, setAddEventDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const setEvent = (event) => {
     const newEvents = eventCollection.events.map(e => {
@@ -110,9 +111,16 @@ function AdminEventCollection(props) {
     repository.setEventCollection(tenant, newCollection);
     setEventCollection(newCollection);
   }
+  const deleteEvent = (key) => {
+    repository.deleteEvent(tenant, eventCollection, key);
+  }
 
   const addEvent = (eventData) => {
     repository.addEvent(tenant, eventCollection, eventData);
+  }
+  const handleDelete = () => {
+    setDeleteDialogOpen(false);
+    repository.deleteEventCollection(tenant, eventCollection.key);
   }
 
   return (
@@ -122,13 +130,16 @@ function AdminEventCollection(props) {
         <IconButton aria-label="Example" onClick={()=>setEditDialogOpen(true)}>
           <CreateIcon />
         </IconButton>
+        <IconButton aria-label="Example" onClick={()=>setDeleteDialogOpen(true)}>
+          <DeleteIcon />
+        </IconButton>
       </div>
 
       <h1 style={{marginLeft: '1em'}}>{eventCollection.title}</h1>
 
       <div style={{margin: '1em'}}>
         {eventCollection.getAllEvents().map(event => (
-          <AdminEvent key={event.key} event={event} setEvent={setEvent}/>
+          <AdminEvent key={event.key} event={event} setEvent={setEvent} deleteEvent={deleteEvent}/>
         ))}
       </div>
 
@@ -140,6 +151,17 @@ function AdminEventCollection(props) {
 
       <EditEventDialog open={addEventDialogOpen} setOpen={setAddEventDialogOpen} onSave={eventData => addEvent(eventData)} event={null} />
       <EditCollectionDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={collectionData => setEventCollection(eventCollection.update(collectionData))} collection={eventCollection}/>
+
+      <Dialog open={deleteDialogOpen} handleClose={() => setDeleteDialogOpen(false)}>
+        <div style={{margin: '1em'}}>
+          <h1>Delete collection?</h1>
+          <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
+            <Button onClick={handleDelete}>Delete</Button>
+            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          </div>
+        </div>
+      </Dialog>
+
     </Paper>
   );
 }

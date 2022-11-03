@@ -8,6 +8,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import CreateIcon from '@mui/icons-material/Create';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
@@ -44,23 +45,63 @@ function EventDuration(props){
 function EventContent(props) {
   const event = props.event;
 
+  const formatDateTime = (date) => {
+    return date.toLocaleDateString("nl-BE") + ' ' + date.toLocaleTimeString("nl-BE")
+  }
+
+  const getStartDate = (event) => {
+    if(event.started){
+      return event.startDate;
+    }
+    return event.plannedStartDate;
+  }
+
   return (
-    <div style={{display: 'flex', flexDirection: 'column', flexWrap: 'wrap'}}>
+    <div style={{display: 'flex', flexDirection: 'column'}}>
       <h1 style={{marginTop: 0}}>{event.title}</h1>
-      <EventDuration event={event}/>
+
+      <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
+        <div style={{flexGrow: 1}}>{formatDateTime(getStartDate(event))}</div>
+        <div><EventDuration event={event}/></div>
+      </div>
+
     </div>
   )
 }
 
+
+export function EventWrapper(props) {
+  const event = props.event;
+  const children = props.children;
+
+  const getBackgroundColor = (event) => {
+    if(!event.started){
+      return 'rgb(255, 255, 255)';
+    }
+    if (event.finished) {
+      return 'rgb(235, 235, 235)';
+    }
+    if (event.started) {
+      return 'rgba(25, 118, 210, 0.3)';
+    }
+    return 'rgb(255, 255, 255)';
+  }
+
+  return (
+    <Paper style={{margin: '1em', padding: '0.5em', backgroundColor: getBackgroundColor(event)}}>
+      {children}
+    </Paper>
+  );
+}
 
 
 export function ViewEvent(props) {
   const event = props.event;
 
   return (
-    <Paper style={{margin: '1em', padding: '0.5em'}}>
+    <EventWrapper event={event}>
       <EventContent event={event} />
-    </Paper>
+    </EventWrapper>
   )
 
 }
@@ -108,7 +149,6 @@ export function EditEventDialog(props) {
 
   const handleSave = () => {
     setOpen(false);
-    console.log(eventData)
     onSave(eventData);
   }
 
@@ -124,8 +164,7 @@ export function EditEventDialog(props) {
           <div>
             <Stack spacing={2}>
               <TextField value={eventData.title} onChange={e => setEventData({...eventData, title: e.target.value})} label="Title" />
-              <DateTimePicker label='Planned Start' value={eventData.plannedStartDate} onChange={date => setEventData({...eventData, plannedStartDate: date})} renderInput={(params) => <TextField {...params} />} />
-              <DateTimePicker label='Start' value={eventData.startDate} onChange={date => setEventData({...eventData, plannedStartDate: date})} renderInput={(params) => <TextField {...params} />} />
+              <DateTimePicker label='Planned Start' value={eventData.plannedStartDate} onChange={date => setEventData({...eventData, plannedStartDate: new Date(date.setSeconds(0))})} ampm={false} renderInput={(params) => <TextField {...params} />} />
 
               <FormControlLabel control={<Switch checked={eventData.started} onChange={e => setEventData({...eventData, started: !eventData.started})}/>} label="Started" />
               <FormControlLabel control={<Switch checked={eventData.finished} onChange={e => setEventData({...eventData, finished: !eventData.finished})}/>} label="Finished" />
@@ -146,28 +185,51 @@ export function EditEventDialog(props) {
 export function AdminEvent(props) {
   const event = props.event;
   const setEvent = props.setEvent;
+  const deleteEvent = props.deleteEvent;
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const handleDelete = () => {
+    setDeleteDialogOpen(false);
+    deleteEvent(event.key);
+  }
 
   return (
-    <Paper style={{margin: '1em', padding: '0.5em', position: 'relative'}}>
-      <div style={{position: 'absolute', top: 0, right: 0}}>
-        <IconButton aria-label="Example" onClick={()=>setEditDialogOpen(true)}>
-          <CreateIcon />
-        </IconButton>
-      </div>
+    <EventWrapper event={event}>
+      <div style={{position: 'relative'}}>
+        <div style={{position: 'absolute', top: 0, right: 0}}>
+          <IconButton aria-label="Example" onClick={()=>setEditDialogOpen(true)}>
+            <CreateIcon />
+          </IconButton>
+          <IconButton aria-label="Example" onClick={()=>setDeleteDialogOpen(true)}>
+            <DeleteIcon />
+          </IconButton>
 
-      <EventContent event={event} />
-
-      <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end'}}>
-        <div>
-          {(!event.started || event.finished) && <Button onClick={() => setEvent(event.start())}>Start</Button>}
-          {(event.started && !event.finished) && <Button onClick={() => setEvent(event.finish())}>Finish</Button>}
         </div>
-      </div>
 
-      <EditEventDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={eventData => setEvent(event.update(eventData))} event={event} />
-    </Paper>
+        <EventContent event={event} />
+
+        <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end'}}>
+          <div>
+            {(!event.started || event.finished) && <Button onClick={() => setEvent(event.start())}>Start</Button>}
+            {(event.started && !event.finished) && <Button onClick={() => setEvent(event.finish())}>Finish</Button>}
+          </div>
+        </div>
+
+        <EditEventDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={eventData => setEvent(event.update(eventData))} event={event} />
+
+        <Dialog open={deleteDialogOpen} handleClose={() => setDeleteDialogOpen(false)}>
+          <div style={{margin: '1em'}}>
+            <h1>Delete event?</h1>
+            <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
+              <Button onClick={handleDelete}>Delete</Button>
+              <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            </div>
+          </div>
+        </Dialog>
+      </div>
+    </EventWrapper>
   )
 
 }
