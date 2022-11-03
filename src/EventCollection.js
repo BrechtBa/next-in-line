@@ -211,7 +211,6 @@ export function EventCollections(props) {
   const addCollection = (collectionData) => {
     repository.addEventCollection(tenant, collectionData)
   };
-  console.log(eventCollections[0].getEvents(edit).length)
 
   return (
     <div>
