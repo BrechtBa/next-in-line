@@ -42,7 +42,7 @@ export class FirebaseEventRepository{
     return onValue(ref(this.db, `tenantData/${tenant}/collections`), snapshot => {
 
       if (snapshot !== undefined){
-        const collections = Object.entries(snapshot.val()).map( col => {
+        const collections = Object.entries(snapshot.val() || {}).map( col => {
           const events = Object.entries(col[1].events || []).map( val => {
             return new Event({
               key: val[0],
@@ -62,8 +62,13 @@ export class FirebaseEventRepository{
     }, {});
   }
 
+
+  addTenant(tenant: string, editToken: string) {
+    set(ref(this.db, `tenantData/${tenant}/editToken`), editToken)
+  }
+
+
   setEventCollection(tenant, collection) {
-    console.log(tenant, collection)
     let events = {}
     collection.events.forEach(e => {
       events[e.key] = {

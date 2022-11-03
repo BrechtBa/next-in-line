@@ -3,6 +3,8 @@ import './App.css';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { EventCollections } from './EventCollection.js'
+import { Welcome } from './Welcome.js'
+
 
 
 function App() {
@@ -18,7 +20,7 @@ function App() {
             <EventCollections/>
           } />
           <Route path="/" element={
-            <div>New</div>
+            <Welcome />
           } />
         </Routes>
       </BrowserRouter>
