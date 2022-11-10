@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+
 import './style.css';
 
 import Paper from '@mui/material/Paper';
@@ -52,12 +53,8 @@ function EditCollectionDialog(props) {
     onSave(collectionData);
   }
 
-  const handleClose = () => {
-    setOpen(false);
-  }
-
   return (
-    <Dialog onClose={handleClose} open={open}>
+    <Dialog onClose={() => setOpen(false)} open={open}>
       <div style={{margin: '1em'}}>
         <h1>Edit Collection</h1>
         <div>
@@ -185,10 +182,13 @@ function EventCollectionComponent(props) {
 export function EventCollections(props) {
 
   const { tenant, token } = useParams();
+  const navigate = useNavigate();
 
+  const [tokenField, setTokenField] = useState('')
   const [editToken, setEditToken] = useState('');
   const [eventCollections, setEventCollections] = useState([])
   const [addEventCollectionDialogOpen, setAddEventCollectionDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
   useEffect(() => {
     repository.onEventCollectionsChanged(tenant, collections => {
@@ -232,10 +232,33 @@ export function EventCollections(props) {
       </div>
 
       { edit && (
-        <div style={{margin: '2em'}}>
-          <Link to='/'>New</Link>
+        <div style={{display: 'flex', justifyContent: 'center', marginTop: '2em'}}>
+          <Button onClick={() => setDetailsDialogOpen(true)}>Show dashboard details</Button>
+
+          <Dialog open={detailsDialogOpen}>
+            <div style={{margin: '1em'}}>
+              <h1>Dashboard details</h1>
+              <div>Dashboard key: {tenant}</div>
+              <div>Dashboard token: {token}</div>
+              <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
+                <Button onClick={() => setDetailsDialogOpen(false)}>close</Button>
+              </div>
+            </div>
+          </Dialog>
+
         </div>
       )}
+
+      { !edit && (
+        <div style={{display: 'flex', justifyContent: 'center', marginTop: '2em'}}>
+          <TextField value={tokenField} onChange={e => setTokenField(e.target.value)} label="Dashboard token" />
+          <Button onClick={() => navigate(`/${tenant}/${tokenField}`)}>Edit Dashboard</Button>
+        </div>
+      )}
+      <div style={{display: 'flex', justifyContent: 'center', marginTop: '2em'}}>
+        <Button onClick={() => navigate('/')}>Home</Button>
+      </div>
+
     </div>
   );
 }
