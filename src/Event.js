@@ -25,13 +25,21 @@ function EventDuration(props){
       const interval = setInterval(() => setDuration(event.getDuration()), 1000);
       return () => clearInterval(interval);
     }
+    if(event.finished){
+      setDuration(event.getDuration());
+    }
   }, [event]);
 
   const formatDuration = duration => {
-    const minutes = Math.floor(duration/1000/60)
-    const seconds = Math.floor((duration - minutes*60*1000)/1000)
+    const hours = Math.floor(duration/1000/3600)
+    const minutes = Math.floor((duration/1000 - hours*3600)/60)
+    const seconds = Math.floor((duration/1000 - hours*3600 - minutes*60))
 
-    return `${(minutes < 10) ? '0' + minutes : minutes}:${(seconds < 10) ? '0' + seconds : seconds}`;
+    const minutesSeconds = `${(minutes < 10) ? '0' + minutes : minutes}:${(seconds < 10) ? '0' + seconds : seconds}`;
+    if(hours > 0){
+      return hours + ':' + minutesSeconds;
+    }
+    return minutesSeconds;
   }
 
   return (

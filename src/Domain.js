@@ -53,12 +53,12 @@ export class Event {
   }
 
   getDuration() {
+    if(this.finished){
+      return this.finishDate - this.startDate;
+    }
     if(this.started){
       const now = new Date();
       return now - this.startDate;
-    }
-    if(this.finished){
-      return this.finishDate - this.startDate;
     }
     else {
       return 0;

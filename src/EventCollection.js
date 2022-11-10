@@ -144,7 +144,7 @@ function EventCollectionComponent(props) {
             <h1 style={{marginLeft: '1em', marginTop: 0}}>{eventCollection.title}</h1>
 
             <div>
-              {eventCollection.getEvents(edit).map(event => (
+              {eventCollection.getEvents(true).map(event => (
                 <EventComponent key={event.key} event={event} setEvent={setEvent} deleteEvent={deleteEvent} edit={edit}/>
               ))}
             </div>
