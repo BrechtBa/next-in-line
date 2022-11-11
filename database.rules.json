@@ -1,7 +1,7 @@
 {
   "rules": {
-    "tenantData": {
-      "$tenant": {
+    "dashboardData": {
+      "$key": {
         ".read": true,
         ".write": true
 

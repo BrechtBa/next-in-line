@@ -1,27 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, set, push} from "firebase/database";
 
-//import auth from "firebase/auth";
-//import 'firebase/storage';
-
-
 import {EventCollection, Event} from '../Domain.js'
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDizW1xfS25fDSpMTDkGBoVM_pmI6ADc5s",
-  authDomain: "next-in-line-d11ab.firebaseapp.com",
-  databaseURL: "https://next-in-line-d11ab-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "next-in-line-d11ab",
-  storageBucket: "next-in-line-d11ab.appspot.com",
-  messagingSenderId: "718215694573",
-  appId: "1:718215694573:web:948e184c1ba0d5ef2624e4"
-};
-
-const app = initializeApp(firebaseConfig);
-
-//export const auth = auth();
-export const db = getDatabase(app);
-//export const storage = firebase.storage();
 
 
 export class FirebaseEventRepository{
@@ -30,17 +10,16 @@ export class FirebaseEventRepository{
     this.db = db;
   }
 
-  onTokenChanged(tenant, callback) {
-     return onValue(ref(this.db, `tenantData/${tenant}/editToken`), snapshot => {
+  onTokenChanged(dashboard, callback) {
+     return onValue(ref(this.db, `dashboardData/${dashboard}/editToken`), snapshot => {
        if (snapshot !== undefined){
           callback(snapshot.val());
        }
      }, {});
   }
 
-  onEventCollectionsChanged(tenant, callback) {
-    return onValue(ref(this.db, `tenantData/${tenant}/collections`), snapshot => {
-
+  onEventCollectionsChanged(dashboard, callback) {
+    return onValue(ref(this.db, `dashboardData/${dashboard}/collections`), snapshot => {
       if (snapshot !== undefined){
         const collections = Object.entries(snapshot.val() || {}).map( col => {
           const events = Object.entries(col[1].events || []).map( val => {
@@ -63,12 +42,12 @@ export class FirebaseEventRepository{
   }
 
 
-  addTenant(tenant: string, editToken: string) {
-    set(ref(this.db, `tenantData/${tenant}/editToken`), editToken)
+  addDashboard(dashboard: string, editToken: string) {
+    set(ref(this.db, `dashboardData/${dashboard}/editToken`), editToken)
   }
 
 
-  setEventCollection(tenant, collection) {
+  setEventCollection(dashboard, collection) {
     let events = {}
     collection.events.forEach(e => {
       events[e.key] = {
@@ -82,24 +61,24 @@ export class FirebaseEventRepository{
       }
     })
 
-    set(ref(this.db, `tenantData/${tenant}/collections/${collection.key}`), {
+    set(ref(this.db, `dashboardData/${dashboard}/collections/${collection.key}`), {
       title: collection.title,
       events: events
     })
   }
 
-  addEventCollection(tenant, collectionData) {
-    push(ref(this.db, `tenantData/${tenant}/collections`), {
+  addEventCollection(dashboard, collectionData) {
+    push(ref(this.db, `dashboardData/${dashboard}/collections`), {
       title: collectionData.title || 'New collection'
     });
   }
 
-  deleteEventCollection(tenant, key) {
-      set(ref(this.db, `tenantData/${tenant}/collections/${key}`), null);
+  deleteEventCollection(dashboard, key) {
+      set(ref(this.db, `dashboardData/${dashboard}/collections/${key}`), null);
   }
 
-  addEvent(tenant, collection, eventData) {
-    push(ref(this.db, `tenantData/${tenant}/collections/${collection.key}/events`), {
+  addEvent(dashboard, collection, eventData) {
+    push(ref(this.db, `dashboardData/${dashboard}/collections/${collection.key}/events`), {
       title: eventData.title,
       plannedStartDate: eventData.plannedStartDate.getTime(),
       plannedFinishDate: eventData.plannedFinishDate === null ? null : eventData.plannedFinishDate.getTime(),
@@ -110,13 +89,24 @@ export class FirebaseEventRepository{
     });
   }
 
-  deleteEvent(tenant, collection, key) {
-      set(ref(this.db, `tenantData/${tenant}/collections/${collection.key}/events/${key}`), null);
+  deleteEvent(dashboard, collection, key) {
+      set(ref(this.db, `dashboardData/${dashboard}/collections/${collection.key}/events/${key}`), null);
   }
 
 }
 
 export const getRepository = () => {
-  const api = new FirebaseEventRepository(db);
-  return api;
+  const firebaseConfig = {
+    apiKey: "AIzaSyDizW1xfS25fDSpMTDkGBoVM_pmI6ADc5s",
+    authDomain: "next-in-line-d11ab.firebaseapp.com",
+    databaseURL: "https://next-in-line-d11ab-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "next-in-line-d11ab",
+    storageBucket: "next-in-line-d11ab.appspot.com",
+    messagingSenderId: "718215694573",
+    appId: "1:718215694573:web:948e184c1ba0d5ef2624e4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  return new FirebaseEventRepository(db);
 }

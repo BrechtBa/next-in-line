@@ -19,33 +19,29 @@ function generateString(length) {
     return result;
 }
 
+
 export function Welcome() {
 
-  const [tenant, setTenant] = useState('')
+  const [dashboardKey, setDashboardKey] = useState('')
   const navigate = useNavigate();
 
 
-  const createNewTenant = () => {
-    const newTenant = generateString(8)
-    const newEditToken = generateString(4)
+  const createNewDashboard = () => {
+    const newDashboardKey = generateString(8)
+    const newToken = generateString(4)
 
-    repository.addTenant(newTenant, newEditToken);
-    navigate(`/${newTenant}/${newEditToken}`);
-
-  }
-
-  const goToTenant = () => {
-    navigate(`/${tenant}`);
+    repository.addDashboard(newDashboardKey, newToken);
+    navigate(`/${newDashboardKey}/${newToken}`);
   }
 
   return (
     <div style={{flexDirection: 'column', marginTop: '5em'}}>
       <div style={{display: 'flex', justifyContent: 'center', marginTop: '2em'}}>
-        <Button onClick={() => createNewTenant()}>Create New Dashboard</Button>
+        <Button onClick={() => createNewDashboard()}>Create New Dashboard</Button>
       </div>
       <div style={{display: 'flex', justifyContent: 'center', marginTop: '2em'}}>
-        <TextField value={tenant} onChange={e => setTenant(e.target.value)} label="Dashboard key" />
-        <Button onClick={() => goToTenant()}>Open Dashboard</Button>
+        <TextField value={dashboardKey} onChange={e => setDashboardKey(e.target.value)} label="Dashboard key" />
+        <Button onClick={() => navigate(`/${dashboardKey}`)}>Open Dashboard</Button>
       </div>
     </div>
   );
