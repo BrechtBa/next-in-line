@@ -10,12 +10,14 @@ export class FirebaseEventRepository{
     this.db = db;
   }
 
-  onTokenChanged(dashboard, callback) {
-     return onValue(ref(this.db, `dashboardData/${dashboard}/editToken`), snapshot => {
-       if (snapshot !== undefined){
-          callback(snapshot.val());
-       }
-     }, {});
+  editAllowed(dashboard, token, callback) {
+    set(ref(this.db, `dashboardData/${dashboard}/editTokenValidation`), {
+      val: token
+    }).then(() => {
+      callback(true);
+    }).catch((error) => {
+      callback(false);
+    });
   }
 
   onEventCollectionsChanged(dashboard, callback) {
@@ -43,7 +45,7 @@ export class FirebaseEventRepository{
 
 
   addDashboard(dashboard: string, editToken: string) {
-    set(ref(this.db, `dashboardData/${dashboard}/editToken`), editToken)
+    set(ref(this.db, `dashboardData/${dashboard}`), {'editToken': editToken})
   }
 
 

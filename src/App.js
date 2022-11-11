@@ -2,9 +2,8 @@ import './App.css';
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import { EventCollections } from './EventCollection.js'
-import { Welcome } from './Welcome.js'
-
+import { ViewEventCollections } from './EventCollection.js'
+import { ViewHome } from './Home.js'
 
 
 function App() {
@@ -14,13 +13,13 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/:dashboard/:token" element={
-            <EventCollections/>
+            <ViewEventCollections/>
           } />
           <Route path="/:dashboard" element={
-            <EventCollections/>
+            <ViewEventCollections/>
           } />
           <Route path="/" element={
-            <Welcome />
+            <ViewHome />
           } />
         </Routes>
       </BrowserRouter>

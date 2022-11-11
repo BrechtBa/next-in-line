@@ -2,9 +2,21 @@
   "rules": {
     "dashboardData": {
       "$key": {
-        ".read": true,
+        "editTokenValidation": {
+          ".read": false,
+          ".write": true,
+          ".validate": "newData.child('val').val() == data.parent().child('editToken').val()"
+        },
+        "collections": {
+          ".read": true,
+          ".write": true
+        },
+        "editToken": {
+          ".write": "!data.exists()",
+          ".read": false
+        },
+        ".read": false,
         ".write": true
-
       },
       ".read": false,
       ".write": false

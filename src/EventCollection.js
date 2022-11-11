@@ -179,13 +179,12 @@ function EventCollectionComponent(props) {
 }
 
 
-export function EventCollections(props) {
+export function ViewEventCollections(props) {
 
   const { dashboard, token } = useParams();
-
   const navigate = useNavigate();
 
-  const [editToken, setEditToken] = useState('');
+  const [edit, setEdit] = useState(false);
   const [eventCollections, setEventCollections] = useState([])
   const [addEventCollectionDialogOpen, setAddEventCollectionDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -197,12 +196,13 @@ export function EventCollections(props) {
   }, [dashboard]);
 
   useEffect(() => {
-    repository.onTokenChanged(dashboard, token => {
-      setEditToken(token);
-    });
-  }, [dashboard]);
-
-  const edit = token === editToken;
+    if(token !== undefined){
+      repository.editAllowed(dashboard, token, setEdit);
+    }
+    else{
+      setEdit(false);
+    }
+  }, [dashboard, token]);
 
   const setEventCollection = (collection) => {
     repository.setEventCollection(dashboard, collection);
@@ -232,16 +232,16 @@ export function EventCollections(props) {
       </div>
 
 
-      <div style={{display: 'flex', justifyContent: 'center', flexDirection: 'row'}}>
+      <div style={{display: 'flex',  flexDirection: 'row'}}>
         { edit && (
-          <div style={{display: 'flex', justifyContent: 'center', margin: '2em'}}>
-            <Button onClick={() => setDetailsDialogOpen(true)}>Show dashboard details</Button>
+          <div style={{display: 'flex', margin: '2em'}}>
+            <Button onClick={() => setDetailsDialogOpen(true)} variant="outlined">Show dashboard details</Button>
 
             <Dialog open={detailsDialogOpen} onClose={() => setDetailsDialogOpen(false)}>
               <div style={{margin: '1em'}}>
                 <h1>Dashboard details</h1>
                 <div>Dashboard key: {dashboard}</div>
-                <div>Dashboard token: {token}</div>
+                <div>Dashboard admin token: {token}</div>
                 <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
                   <Button onClick={() => setDetailsDialogOpen(false)}>close</Button>
                 </div>
@@ -252,19 +252,19 @@ export function EventCollections(props) {
         )}
 
         { !edit && (
-          <div style={{display: 'flex', justifyContent: 'center', margin: '2em'}}>
-            <TextField value={token || ''} onChange={e => navigate(`/${dashboard}/${e.target.value}`)} label="Dashboard token" />
+          <div style={{display: 'flex', margin: '2em'}}>
+            <TextField value={token || ''} onChange={e => navigate(`/${dashboard}/${e.target.value}`)} label="Dashboard admin token" />
           </div>
         )}
 
         { edit && (
-          <div style={{display: 'flex', justifyContent: 'center', margin: '2em'}}>
-            <Button onClick={() => navigate(`/${dashboard}`)}>View dashboard</Button>
+          <div style={{display: 'flex', margin: '2em'}}>
+            <Button onClick={() => navigate(`/${dashboard}`)} variant="outlined">View dashboard</Button>
           </div>
         )}
 
-        <div style={{display: 'flex', justifyContent: 'center', margin: '2em'}}>
-          <Button onClick={() => navigate('/')}>Home</Button>
+        <div style={{display: 'flex', margin: '2em'}}>
+          <Button onClick={() => navigate('/')} variant="outlined">Home</Button>
         </div>
       </div>
 
