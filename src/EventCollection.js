@@ -73,7 +73,7 @@ function EditCollectionDialog(props) {
 
 
 function EventCollectionComponent(props) {
-  const tenant = props.tenant;
+  const dashboard = props.dashboard;
   const eventCollection = props.eventCollection;
   const edit = props.edit || false;
   const setEventCollection = props.setEventCollection;
@@ -91,20 +91,20 @@ function EventCollectionComponent(props) {
       return e;
     })
     const newCollection = new EventCollection({key: eventCollection.key, title: eventCollection.title, events: newEvents});
-    repository.setEventCollection(tenant, newCollection);
+    repository.setEventCollection(dashboard, newCollection);
     setEventCollection(newCollection);
   }
   const deleteEvent = (key) => {
-    repository.deleteEvent(tenant, eventCollection, key);
+    repository.deleteEvent(dashboard, eventCollection, key);
   }
 
   const addEvent = (eventData) => {
-    repository.addEvent(tenant, eventCollection, eventData);
+    repository.addEvent(dashboard, eventCollection, eventData);
   }
 
   const handleDelete = () => {
     setDeleteDialogOpen(false);
-    repository.deleteEventCollection(tenant, eventCollection.key);
+    repository.deleteEventCollection(dashboard, eventCollection.key);
   }
 
   return (
@@ -165,7 +165,7 @@ function EventCollectionComponent(props) {
       <EditEventDialog open={addEventDialogOpen} setOpen={setAddEventDialogOpen} onSave={eventData => addEvent(eventData)} event={null} />
       <EditCollectionDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={collectionData => setEventCollection(eventCollection.update(collectionData))} collection={eventCollection}/>
 
-      <Dialog open={deleteDialogOpen} handleClose={() => setDeleteDialogOpen(false)}>
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <div style={{margin: '1em'}}>
           <h1>Delete collection?</h1>
           <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
@@ -181,35 +181,35 @@ function EventCollectionComponent(props) {
 
 export function EventCollections(props) {
 
-  const { tenant, token } = useParams();
+  const { dashboard, token } = useParams();
+
   const navigate = useNavigate();
 
-  const [tokenField, setTokenField] = useState('')
   const [editToken, setEditToken] = useState('');
   const [eventCollections, setEventCollections] = useState([])
   const [addEventCollectionDialogOpen, setAddEventCollectionDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
   useEffect(() => {
-    repository.onEventCollectionsChanged(tenant, collections => {
+    repository.onEventCollectionsChanged(dashboard, collections => {
       setEventCollections(collections);
     });
-  }, [tenant]);
+  }, [dashboard]);
 
   useEffect(() => {
-    repository.onTokenChanged(tenant, token => {
+    repository.onTokenChanged(dashboard, token => {
       setEditToken(token);
     });
-  }, [tenant]);
+  }, [dashboard]);
 
   const edit = token === editToken;
 
   const setEventCollection = (collection) => {
-    repository.setEventCollection(tenant, collection);
+    repository.setEventCollection(dashboard, collection);
   }
 
   const addCollection = (collectionData) => {
-    repository.addEventCollection(tenant, collectionData)
+    repository.addEventCollection(dashboard, collectionData)
   };
 
   return (
@@ -217,7 +217,7 @@ export function EventCollections(props) {
 
       <div style={{display: 'flex', flexDirection: 'row', wrap: 'wrap'}}>
         {eventCollections.filter(c => (edit || (c.getEvents(edit).length > 0))).map(collection => (
-          <EventCollectionComponent key={collection.key} tenant={tenant} eventCollection={collection} setEventCollection={setEventCollection} edit={edit}/>
+          <EventCollectionComponent key={collection.key} dashboard={dashboard} eventCollection={collection} setEventCollection={setEventCollection} edit={edit}/>
         ))}
 
         {edit && (
@@ -231,32 +231,41 @@ export function EventCollections(props) {
         )}
       </div>
 
-      { edit && (
-        <div style={{display: 'flex', justifyContent: 'center', marginTop: '2em'}}>
-          <Button onClick={() => setDetailsDialogOpen(true)}>Show dashboard details</Button>
 
-          <Dialog open={detailsDialogOpen}>
-            <div style={{margin: '1em'}}>
-              <h1>Dashboard details</h1>
-              <div>Dashboard key: {tenant}</div>
-              <div>Dashboard token: {token}</div>
-              <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
-                <Button onClick={() => setDetailsDialogOpen(false)}>close</Button>
+      <div style={{display: 'flex', justifyContent: 'center', flexDirection: 'row'}}>
+        { edit && (
+          <div style={{display: 'flex', justifyContent: 'center', margin: '2em'}}>
+            <Button onClick={() => setDetailsDialogOpen(true)}>Show dashboard details</Button>
+
+            <Dialog open={detailsDialogOpen} onClose={() => setDetailsDialogOpen(false)}>
+              <div style={{margin: '1em'}}>
+                <h1>Dashboard details</h1>
+                <div>Dashboard key: {dashboard}</div>
+                <div>Dashboard token: {token}</div>
+                <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
+                  <Button onClick={() => setDetailsDialogOpen(false)}>close</Button>
+                </div>
               </div>
-            </div>
-          </Dialog>
+            </Dialog>
 
-        </div>
-      )}
+          </div>
+        )}
 
-      { !edit && (
-        <div style={{display: 'flex', justifyContent: 'center', marginTop: '2em'}}>
-          <TextField value={tokenField} onChange={e => setTokenField(e.target.value)} label="Dashboard token" />
-          <Button onClick={() => navigate(`/${tenant}/${tokenField}`)}>Edit Dashboard</Button>
+        { !edit && (
+          <div style={{display: 'flex', justifyContent: 'center', margin: '2em'}}>
+            <TextField value={token || ''} onChange={e => navigate(`/${dashboard}/${e.target.value}`)} label="Dashboard token" />
+          </div>
+        )}
+
+        { edit && (
+          <div style={{display: 'flex', justifyContent: 'center', margin: '2em'}}>
+            <Button onClick={() => navigate(`/${dashboard}`)}>View dashboard</Button>
+          </div>
+        )}
+
+        <div style={{display: 'flex', justifyContent: 'center', margin: '2em'}}>
+          <Button onClick={() => navigate('/')}>Home</Button>
         </div>
-      )}
-      <div style={{display: 'flex', justifyContent: 'center', marginTop: '2em'}}>
-        <Button onClick={() => navigate('/')}>Home</Button>
       </div>
 
     </div>

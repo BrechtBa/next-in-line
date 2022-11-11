@@ -13,10 +13,10 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/:tenant/:token" element={
+          <Route path="/:dashboard/:token" element={
             <EventCollections/>
           } />
-          <Route path="/:tenant" element={
+          <Route path="/:dashboard" element={
             <EventCollections/>
           } />
           <Route path="/" element={

@@ -104,12 +104,8 @@ export function EditEventDialog(props) {
     onSave(eventData);
   }
 
-  const handleClose = () => {
-    setOpen(false);
-  }
-
   return (
-    <Dialog onClose={handleClose} open={open}>
+    <Dialog onClose={() => setOpen(false)} open={open}>
       <div style={{margin: '1em'}}>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <h1>Edit Event</h1>
@@ -198,7 +194,7 @@ export function EventComponent(props) {
 
       <EditEventDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={eventData => setEvent(event.update(eventData))} event={event} />
 
-      <Dialog open={deleteDialogOpen} handleClose={() => setDeleteDialogOpen(false)}>
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <div style={{margin: '1em'}}>
           <h1>Delete event?</h1>
           <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
