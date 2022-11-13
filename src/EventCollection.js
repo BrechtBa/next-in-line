@@ -188,16 +188,25 @@ export function ViewEventCollections(props) {
   const [eventCollections, setEventCollections] = useState([])
   const [addEventCollectionDialogOpen, setAddEventCollectionDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editTokenInput, setEditTokenInput] = useState('');
 
   useEffect(() => {
     repository.onEventCollectionsChanged(dashboard, collections => {
       setEventCollections(collections);
+    }, () => {
+      navigate('/');
     });
-  }, [dashboard]);
+  }, [dashboard, navigate]);
 
   useEffect(() => {
     if(token !== undefined){
-      repository.editAllowed(dashboard, token, setEdit);
+      repository.editAllowed(dashboard, token, () => {
+        setEdit(true);
+      }, (error) => {
+        setEdit(false);
+        console.error(error)
+      });
     }
     else{
       setEdit(false);
@@ -211,6 +220,13 @@ export function ViewEventCollections(props) {
   const addCollection = (collectionData) => {
     repository.addEventCollection(dashboard, collectionData)
   };
+
+  const closeAndNavigate = () => {
+    setEditDialogOpen(false);
+    const editToken = editTokenInput;
+    setEditTokenInput('');
+    navigate(`/${dashboard}/${editToken}`);
+  }
 
   return (
     <div>
@@ -253,7 +269,20 @@ export function ViewEventCollections(props) {
 
         { !edit && (
           <div style={{display: 'flex', margin: '2em'}}>
-            <TextField value={token || ''} onChange={e => navigate(`/${dashboard}/${e.target.value}`)} label="Dashboard admin token" />
+            <Button onClick={() => setEditDialogOpen(true)} variant="outlined">Edit dashboard</Button>
+
+            <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
+              <div style={{margin: '1em'}}>
+                <h1>Edit Dashboard</h1>
+
+                <TextField value={editTokenInput} onChange={e => setEditTokenInput(e.target.value)} onKeyPress={(e) => (e.key === 'Enter') &&  closeAndNavigate()} label="Dashboard edit token" />
+
+                <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
+                  <Button onClick={() => closeAndNavigate()}>Open</Button>
+                  <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                </div>
+              </div>
+            </Dialog>
           </div>
         )}
 

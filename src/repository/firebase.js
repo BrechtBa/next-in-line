@@ -1,26 +1,70 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onValue, set, push} from "firebase/database";
+import { getDatabase, ref, onValue, set, push, get} from "firebase/database";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 
 import {EventCollection, Event} from '../Domain.js'
 
 
+function generateString(length) {
+    var result           = '';
+    var characters       = 'abcdefghijklmnopqrstuvwxyz';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
+
+
 export class FirebaseEventRepository{
 
-  constructor(db) {
+  constructor(db, auth) {
     this.db = db;
+    this.auth = auth;
   }
 
-  editAllowed(dashboard, token, callback) {
-    set(ref(this.db, `dashboardData/${dashboard}/editTokenValidation`), {
-      val: token
-    }).then(() => {
-      callback(true);
+  getDashboardEmail(dashboard) {
+    return `${dashboard}@next-in-line.org`
+  }
+
+  addDashboard(callback, errorCallback) {
+    const dashboard = generateString(8)
+    const editToken = generateString(8)
+
+    // create an admin user account
+    createUserWithEmailAndPassword(this.auth, this.getDashboardEmail(dashboard) , editToken).then((userCredential) => {
+      // user account created, initialize dashboard
+      set(ref(this.db, `dashboardData/${dashboard}/uid`), userCredential.user.uid);
+      set(ref(this.db, `dashboardData/${dashboard}/exists`), true);
+      callback(dashboard, editToken)
     }).catch((error) => {
-      callback(false);
+      errorCallback(error)
     });
   }
 
-  onEventCollectionsChanged(dashboard, callback) {
+  editAllowed(dashboard: string, editToken: string, successCallback, errorCallback) {
+    signInWithEmailAndPassword(this.auth, this.getDashboardEmail(dashboard) , editToken).then((userCredential) => {
+      successCallback();
+    }).catch((error) => {
+      errorCallback(error);
+    });
+  }
+
+  onEventCollectionsChanged(dashboard, successCallback, errorCallback) {
+    get(ref(this.db, `dashboardData/${dashboard}/exists`)).then((snapshot) => {
+      if (snapshot !== undefined){
+        if(snapshot.val() === null){
+          errorCallback()
+          return
+        }
+      }
+      else{
+        errorCallback()
+        return
+      }
+    })
+
     return onValue(ref(this.db, `dashboardData/${dashboard}/collections`), snapshot => {
       if (snapshot !== undefined){
         const collections = Object.entries(snapshot.val() || {}).map( col => {
@@ -38,16 +82,10 @@ export class FirebaseEventRepository{
           })
           return new EventCollection({key: col[0], title: col[1].title, events: events})
         });
-        callback(collections);
+        successCallback(collections);
       }
     }, {});
   }
-
-
-  addDashboard(dashboard: string, editToken: string) {
-    set(ref(this.db, `dashboardData/${dashboard}`), {'editToken': editToken})
-  }
-
 
   setEventCollection(dashboard, collection) {
     let events = {}
@@ -76,7 +114,7 @@ export class FirebaseEventRepository{
   }
 
   deleteEventCollection(dashboard, key) {
-      set(ref(this.db, `dashboardData/${dashboard}/collections/${key}`), null);
+    set(ref(this.db, `dashboardData/${dashboard}/collections/${key}`), null);
   }
 
   addEvent(dashboard, collection, eventData) {
@@ -92,7 +130,7 @@ export class FirebaseEventRepository{
   }
 
   deleteEvent(dashboard, collection, key) {
-      set(ref(this.db, `dashboardData/${dashboard}/collections/${collection.key}/events/${key}`), null);
+    set(ref(this.db, `dashboardData/${dashboard}/collections/${collection.key}/events/${key}`), null);
   }
 
 }
@@ -110,5 +148,7 @@ export const getRepository = () => {
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  return new FirebaseEventRepository(db);
+  const auth = getAuth(app);
+
+  return new FirebaseEventRepository(db, auth);
 }

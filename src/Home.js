@@ -10,17 +10,6 @@ import { getRepository } from './repository/firebase.js'
 const repository = getRepository();
 
 
-function generateString(length) {
-    var result           = '';
-    var characters       = 'abcdefghijklmnopqrstuvwxyz';
-    var charactersLength = characters.length;
-    for ( var i = 0; i < length; i++ ) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
-}
-
-
 export function ViewHome() {
 
   const [dashboardKey, setDashboardKey] = useState('')
@@ -29,11 +18,13 @@ export function ViewHome() {
 
 
   const createNewDashboard = () => {
-    const newDashboardKey = generateString(8)
-    const newToken = generateString(4)
-
-    repository.addDashboard(newDashboardKey, newToken);
-    navigate(`/${newDashboardKey}/${newToken}`);
+    repository.addDashboard((newDashboardKey, newToken) => {
+      if(newDashboardKey !== null) {
+        navigate(`/${newDashboardKey}/${newToken}`);
+      }
+    }, (error) => {
+      console.error(error);
+    });
   }
 
   return (

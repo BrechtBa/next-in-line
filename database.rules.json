@@ -2,21 +2,18 @@
   "rules": {
     "dashboardData": {
       "$key": {
-        "editTokenValidation": {
-          ".read": false,
-          ".write": true,
-          ".validate": "newData.child('val').val() == data.parent().child('editToken').val()"
+        "exists": {
+          ".read": true,
+          ".write": "!data.exists()"
         },
         "collections": {
           ".read": true,
-          ".write": true
+          ".write": "auth !== null && auth.uid === root.child('dashboardData').child($key).child('uid').val()"
         },
-        "editToken": {
-          ".write": "!data.exists()",
-          ".read": false
-        },
-        ".read": false,
-        ".write": true
+        "uid": {
+          ".read": false,
+          ".write": "auth !== null && !data.exists()"
+        }
       },
       ".read": false,
       ".write": false
