@@ -79,11 +79,13 @@ export class EventCollection {
   key: string
   title: string
   events: Object
+  order: number
 
   constructor(args: object) {
     this.key = args.key;
     this.title = args.title;
     this.events = args.events;
+    this.order = args.order;
   }
 
   addEvent(event) {

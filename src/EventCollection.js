@@ -9,6 +9,7 @@ import AddIcon from '@mui/icons-material/Add';
 import IconButton from '@mui/material/IconButton';
 import CreateIcon from '@mui/icons-material/Create';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Stack from '@mui/material/Stack';
@@ -106,6 +107,9 @@ function EventCollectionComponent(props) {
     setDeleteDialogOpen(false);
     repository.deleteEventCollection(dashboard, eventCollection.key);
   }
+  const duplicateCollection = () => {
+    repository.duplicateEventCollection(dashboard, eventCollection.key);
+  }
 
   return (
     <Paper className='paperEventCollection' style={{flexGrow: collapsed ? 0 : 1, minWidth: collapsed ? '2em' : '8em'}} >
@@ -128,6 +132,9 @@ function EventCollectionComponent(props) {
             <div style={{display: 'flex', flexDirection: 'row'}}>
               <IconButton aria-label="Example" onClick={()=>setEditDialogOpen(true)}>
                 <CreateIcon />
+              </IconButton>
+              <IconButton aria-label="Example" onClick={()=>duplicateCollection()}>
+                <ContentCopyIcon />
               </IconButton>
               <IconButton aria-label="Example" onClick={()=>setDeleteDialogOpen(true)}>
                 <DeleteIcon />
