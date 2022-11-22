@@ -103,10 +103,11 @@ export class FirebaseEventRepository{
         finished: e.finished,
       }
     })
-
+    console.log(collection)
     set(ref(this.db, `dashboardData/${dashboard}/collections/${collection.key}`), {
       title: collection.title,
-      events: events
+      events: events,
+      order: collection.order,
     })
   }
 

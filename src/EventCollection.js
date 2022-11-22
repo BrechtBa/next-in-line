@@ -91,7 +91,12 @@ function EventCollectionComponent(props) {
       }
       return e;
     })
-    const newCollection = new EventCollection({key: eventCollection.key, title: eventCollection.title, events: newEvents});
+    const newCollection = new EventCollection({
+      key: eventCollection.key,
+      title: eventCollection.title,
+      order: eventCollection.order,
+      events: newEvents
+    });
     repository.setEventCollection(dashboard, newCollection);
     setEventCollection(newCollection);
   }

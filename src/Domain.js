@@ -102,6 +102,7 @@ export class EventCollection {
     return new EventCollection({
       key: this.key,
       title: collectionData.title || this.title,
+      order: collectionData.order || this.order,
       events: [...this.events]
     });
   }
