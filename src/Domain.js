@@ -37,6 +37,10 @@ export class Event {
 
 
   update(eventData: object) {
+    if (eventData.started && (eventData.startDate === undefined || eventData.startDate === null) && this.startDate === null ){
+      eventData.startDate = new Date();
+    }
+
     return new Event({
       key: this.key,
       ...{
