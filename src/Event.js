@@ -50,6 +50,12 @@ function EventDuration(props){
 }
 
 const formatDateTime = (date) => {
+  if(date === null){
+    return (
+      <div></div>
+    );
+  }
+
   return (
     <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
       <div style={{marginRight: '0.3em'}}>{date.toLocaleDateString("nl-BE")}</div>
