@@ -240,6 +240,16 @@ export function ViewEventCollections(props) {
     navigate(`/${dashboard}/${editToken}`);
   }
 
+  const exportCollections = () => {
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(eventCollections, null, 2));
+    var downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href",     dataStr);
+    downloadAnchorNode.setAttribute("download", "next-in-line-export.json");
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  }
+
   return (
     <div>
 
@@ -301,6 +311,12 @@ export function ViewEventCollections(props) {
         { edit && (
           <div style={{display: 'flex', margin: '2em'}}>
             <Button onClick={() => navigate(`/${dashboard}`)} variant="outlined">View dashboard</Button>
+          </div>
+        )}
+
+        { edit && (
+          <div style={{display: 'flex', margin: '2em'}}>
+            <Button onClick={() => exportCollections()} variant="outlined">Export</Button>
           </div>
         )}
 

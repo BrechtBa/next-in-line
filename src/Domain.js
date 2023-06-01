@@ -76,6 +76,10 @@ export class Event {
     return this.plannedStartDate;
   }
 
+  static fromObject(obj) {
+    return new Event(obj)
+  }
+
 }
 
 
@@ -122,4 +126,17 @@ export class EventCollection {
     return 1;
   }
 
+  static fromObject(obj) {
+    let events = {}
+    for (const [key, event] of Object.entries(obj.events)) {
+      events[key] = Event.fromObject(event);
+    }
+    return new EventCollection({
+      key: obj.key,
+      title: obj.title,
+      order: obj.order,
+      events: events
+    })
+
+  }
 }
