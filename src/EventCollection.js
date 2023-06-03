@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 
 import './style.css';
@@ -16,6 +16,8 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
+
+import { FileDrop } from 'react-file-drop'
 
 import { EventComponent, EditEventDialog } from './Event.js'
 
@@ -201,6 +203,8 @@ export function ViewEventCollections(props) {
   const [addEventCollectionDialogOpen, setAddEventCollectionDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importErrorMessage, setImportErrorMessage] = useState('');
   const [editTokenInput, setEditTokenInput] = useState('');
 
   useEffect(() => {
@@ -250,6 +254,41 @@ export function ViewEventCollections(props) {
     downloadAnchorNode.remove();
   }
 
+  const fileInputRef = useRef(null);
+
+  const onFileInputChange = (files) => {
+    var reader = new FileReader();
+    reader.readAsText(files[0], "UTF-8");
+    reader.onload = function (evt) {
+      try {
+        const data = JSON.parse(evt.target.result);
+        console.log(data)
+        try {
+          const eventCollections = data.map(e => EventCollection.fromObject(e));
+            try {
+              repository.overwriteEventCollections(dashboard, eventCollections);
+              setImportDialogOpen(false);
+            }
+            catch (e){
+              setImportErrorMessage("Error during importing!");
+              console.log(e);
+            }
+        }
+        catch {
+          setImportErrorMessage("Data could not be parsed!");
+        }
+      }
+      catch {
+        setImportErrorMessage("File could not be read!");
+      }
+
+    }
+    reader.onerror = function (evt) {
+        console.log("error reading file");
+    }
+
+  }
+
   return (
     <div>
 
@@ -288,6 +327,25 @@ export function ViewEventCollections(props) {
 
           </div>
         )}
+        { edit && (
+          <div style={{display: 'flex', margin: '2em'}}>
+            <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)}>
+              <div style={{margin: '1em'}}>
+                <h1>Importing will delete all data</h1>
+                <div style={{color: "#f00"}}>{importErrorMessage}</div>
+                <FileDrop onDrop={(files, event) => onFileInputChange(files)} onTargetClick={() => fileInputRef.current.click()}>
+                  <div style={{width: "20em", height: "10em", backgroundColor: '#f0f0f0', border: "1px dashed #aaa", display: "flex", justifyContent: "center", alignItems: "center"}}>
+                    Drop a .json file here.
+                  </div>
+                </FileDrop>
+                <input onChange={(e) => onFileInputChange(e.target.files)} ref={fileInputRef} type="file" style={{display: "none"}}/>
+                <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
+                  <Button onClick={() => setImportDialogOpen(false)}>close</Button>
+                </div>
+              </div>
+            </Dialog>
+          </div>
+        )}
 
         { !edit && (
           <div style={{display: 'flex', margin: '2em'}}>
@@ -317,6 +375,12 @@ export function ViewEventCollections(props) {
         { edit && (
           <div style={{display: 'flex', margin: '2em'}}>
             <Button onClick={() => exportCollections()} variant="outlined">Export</Button>
+          </div>
+        )}
+
+        { edit && (
+          <div style={{display: 'flex', margin: '2em'}}>
+            <Button onClick={() => {setImportErrorMessage(""); setImportDialogOpen(true)}} variant="outlined">Import</Button>
           </div>
         )}
 

@@ -77,16 +77,24 @@ export class Event {
   }
 
   static fromObject(obj) {
-    return new Event(obj)
+    return new Event({
+      key: obj.key,
+      title: obj.title,
+      plannedStartDate: obj.plannedStartDate === null ? null : new Date(obj.plannedStartDate),
+      plannedFinishDate: obj.plannedFinishDate === null ? null : new Date(obj.plannedFinishDate),
+      startDate: obj.startDate === null ? null : new Date(obj.startDate),
+      finishDate: obj.finishDate === null ? null : new Date(obj.finishDate),
+      started: obj.started,
+      finished: obj.finished
+    })
   }
-
 }
 
 
 export class EventCollection {
   key: string
   title: string
-  events: Object
+  events: Array
   order: number
 
   constructor(args: object) {
@@ -127,15 +135,11 @@ export class EventCollection {
   }
 
   static fromObject(obj) {
-    let events = {}
-    for (const [key, event] of Object.entries(obj.events)) {
-      events[key] = Event.fromObject(event);
-    }
     return new EventCollection({
       key: obj.key,
       title: obj.title,
       order: obj.order,
-      events: events
+      events: obj.events.map(event => Event.fromObject(event))
     })
 
   }

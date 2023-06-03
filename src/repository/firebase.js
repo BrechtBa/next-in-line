@@ -73,7 +73,7 @@ export class FirebaseEventRepository{
                   started: val[1].started,
                   finished: val[1].finished
                 })
-              })
+              });
               return new EventCollection({key: col[0], title: col[1].title, events: events, order: col[1].order})
             });
             collections.sort((a, b) => a.order-b.order);
@@ -188,6 +188,32 @@ export class FirebaseEventRepository{
 
   deleteEvent(dashboard, collection, key) {
     set(ref(this.db, `dashboardData/${dashboard}/collections/${collection.key}/events/${key}`), null);
+  }
+
+  overwriteEventCollections(dashboard, collections){
+    runTransaction(ref(this.db, `dashboardData/${dashboard}/collections`), () => {
+      let collectionsObject = {};
+      collections.forEach((collection) => {
+        let events = {};
+        collection.events.forEach(e => {
+          events[e.key] = {
+            title: e.title,
+            plannedStartDate: e.plannedStartDate.getTime(),
+            plannedFinishDate: e.plannedFinishDate === null ? null : e.plannedFinishDate.getTime(),
+            startDate: e.startDate === null ? null : e.startDate.getTime(),
+            finishDate: e.finishDate === null ? null : e.finishDate.getTime(),
+            started: e.started,
+            finished: e.finished,
+          }
+        })
+        collectionsObject[collection.key] = {
+          title: collection.title,
+          events: events,
+          order: collection.order,
+        };
+      });
+      return collectionsObject;
+    });
   }
 
 }
