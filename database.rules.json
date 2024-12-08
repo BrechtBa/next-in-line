@@ -1,22 +1,29 @@
 {
   "rules": {
-    "dashboardData": {
-      "$key": {
-        "exists": {
-          ".read": true,
-          ".write": "!data.exists()"
-        },
-        "collections": {
-          ".read": true,
-          ".write": "auth !== null && auth.uid === root.child('dashboardData').child($key).child('uid').val()"
-        },
-        "uid": {
+    "games":{
+      "$game":{
+        "codes": {
+          "$code":{
+            ".read": "auth != null && root.child('games').child($game).child('users').child(auth.uid).exists()",
+            ".write": "auth != null && root.child('games').child($game).child('users').child(auth.uid).exists()"
+          },
           ".read": false,
-          ".write": "auth !== null && !data.exists()"
+          ".write": "auth !== null && !data.exists() && newData.val() == auth.uid",
+        },
+        "users": {
+          "$uid": {
+            "decoded": {
+              ".read": false,
+              ".validate": "root.child('games').child($game).child('codes').child(newData.val()).val() === $uid",
+              ".write": "auth !== null && $uid !== auth.uid && !data.exists()"
+            }
+          },
+          ".read": "auth != null && root.child('games').child($game).child('users').child(auth.uid).exists()",
+          ".write": "auth != null && !root.child('games').child($game).child('users').child(auth.uid).exists()"
         }
-      },
-      ".read": false,
-      ".write": false
-    }
+      }
+    },
+    ".read": false,
+    ".write": false
   }
 }
