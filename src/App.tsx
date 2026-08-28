@@ -1,6 +1,6 @@
 import './App.css';
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router";
 
 import { ViewEventCollections } from './EventCollection.js'
 import { ViewHome } from './Home.js'

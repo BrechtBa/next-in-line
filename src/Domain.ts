@@ -1,16 +1,27 @@
+export type EventData = {
+  key: string;
+  title: string;
+  plannedStartDate: Date;
+  plannedFinishDate: Date | null;
+  startDate: Date | null;
+  finishDate: Date | null;
+  started: boolean;
+  finished: boolean;
+  favorite?: boolean;
+}
 
 
 export class Event {
   key: string;
   title: string;
   plannedStartDate: Date;
-  plannedFinishDate: Date;
-  startDate: Date;
-  finishDate: Date;
+  plannedFinishDate: Date | null;
+  startDate: Date | null;
+  finishDate: Date | null;
   started: boolean;
   finished: boolean;
 
-  constructor(args: object) {
+  constructor(args: EventData) {
     this.key = args.key;
     this.title = args.title;
     this.plannedStartDate = args.plannedStartDate || new Date();
@@ -35,8 +46,7 @@ export class Event {
     });
   }
 
-
-  update(eventData: object) {
+  update(eventData: EventData) {
     if (eventData.started && (eventData.startDate === undefined || eventData.startDate === null) && this.startDate === null ){
       eventData.startDate = new Date();
     }
@@ -56,27 +66,27 @@ export class Event {
     });
   }
 
-  getDuration() {
+  getDuration(): number {
     if(this.finished){
-      return this.finishDate - this.startDate;
+      return this.finishDate.getTime() - this.startDate.getTime();
     }
     if(this.started){
       const now = new Date();
-      return now - this.startDate;
+      return now.getTime() - this.startDate.getTime();
     }
     else {
       return 0;
     }
   }
 
-  getStartDate() {
+  getStartDate(): Date {
     if(this.started){
       return this.startDate;
     }
     return this.plannedStartDate;
   }
 
-  static fromObject(obj) {
+  static fromObject(obj: EventData) {
     return new Event({
       key: obj.key,
       title: obj.title,
@@ -91,30 +101,34 @@ export class Event {
 }
 
 
-export class EventCollection {
-  key: string
-  title: string
-  events: Array
-  order: number
+export type EventCollectionData = {
+  key: string;
+  title: string;
+  events: Array<Event>;
+  order: number;
+}
 
-  constructor(args: object) {
+
+export class EventCollection {
+  key: string;
+  title: string;
+  events: Array<Event>;
+  order: number;
+
+  constructor(args: EventCollectionData) {
     this.key = args.key;
     this.title = args.title;
     this.events = args.events;
     this.order = args.order;
   }
 
-  addEvent(event) {
+  addEvent(event: Event): EventCollection {
     let events = [...this.events];
     events.push(event)
-    return EventCollection(this.key, this.title, events);
+    return new EventCollection({key: this.key, title: this.title, events: events, order: this.order});
   }
 
-  removeEvent(key) {
-    console.log('removing is not implemented yet')
-  }
-
-  update(collectionData: object) {
+  update(collectionData: EventCollectionData) {
     return new EventCollection({
       key: this.key,
       title: collectionData.title || this.title,
@@ -123,7 +137,7 @@ export class EventCollection {
     });
   }
 
-  getEvents(finished: bool) {
+  getEvents(finished: boolean) {
     return this.events.filter(e => finished || !e.finished ).sort(this.eventSorting);
   }
 
@@ -134,7 +148,7 @@ export class EventCollection {
     return 1;
   }
 
-  static fromObject(obj) {
+  static fromObject(obj: EventCollectionData) {
     return new EventCollection({
       key: obj.key,
       title: obj.title,
@@ -143,4 +157,12 @@ export class EventCollection {
     })
 
   }
+}
+
+
+export interface UserEventData {
+  dashboard: string;
+  eventCollection: string;
+  event: string;
+  isFavorite: boolean;
 }

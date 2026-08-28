@@ -1,37 +1,37 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onValue, set, push, get, runTransaction} from "firebase/database";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { getDatabase, ref, onValue, set, push, get, runTransaction, Database} from "firebase/database";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, type Auth } from "firebase/auth";
 
-import {EventCollection, Event} from '../Domain.js'
+import {EventCollection, Event, type EventData} from '../Domain.js'
+import type { EventRepository } from "./interface.js";
 
 
-function generateString(length) {
-    var result           = '';
-    var characters       = 'abcdefghijklmnopqrstuvwxyz';
-    var charactersLength = characters.length;
-    for ( var i = 0; i < length; i++ ) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
+type EventDTO = {
+  key: string;
+  title: string;
+  plannedStartDate?: number;
+  plannedFinishDate?: number;
+  startDate?: number;
+  finishDate?: number;
+  started: boolean;
+  finished: boolean;
 }
 
 
-export class FirebaseEventRepository{
+export class FirebaseEventRepository implements EventRepository{
+  db: Database;
+  auth: Auth;
 
-  constructor(db, auth) {
+  constructor(db: Database, auth: Auth) {
     this.db = db;
     this.auth = auth;
   }
 
-  getDashboardEmail(dashboard) {
+  getDashboardEmail(dashboard: string) {
     return `${dashboard}@next-in-line.org`
   }
 
-  addDashboard(callback, errorCallback) {
-    const dashboard = generateString(8)
-    const editToken = generateString(8)
-
-    // create an admin user account
+  addDashboard(dashboard: string, editToken: string, callback: (dashboard: string, editToken: string) => void, errorCallback: (error: string) => void) {
     createUserWithEmailAndPassword(this.auth, this.getDashboardEmail(dashboard) , editToken).then((userCredential) => {
       // user account created, initialize dashboard
       set(ref(this.db, `dashboardData/${dashboard}/uid`), userCredential.user.uid);
@@ -42,15 +42,15 @@ export class FirebaseEventRepository{
     });
   }
 
-  editAllowed(dashboard: string, editToken: string, successCallback, errorCallback) {
-    signInWithEmailAndPassword(this.auth, this.getDashboardEmail(dashboard) , editToken).then((userCredential) => {
+  editAllowed(dashboard: string, editToken: string, successCallback: () => void, errorCallback: (error: string) => void): void {
+    signInWithEmailAndPassword(this.auth, this.getDashboardEmail(dashboard) , editToken).then(() => {
       successCallback();
     }).catch((error) => {
       errorCallback(error);
     });
   }
 
-  onEventCollectionsChanged(dashboard, successCallback, errorCallback) {
+  onEventCollectionsChanged(dashboard: string, successCallback: (collections: Array<EventCollection>) => void, errorCallback: () => void): void {
     // check if the dashboard exists, we cannot depend on the collections query here as a dashboard can have no collections
     get(ref(this.db, `dashboardData/${dashboard}/exists`)).then((snapshot) => {
       if (snapshot !== undefined){
@@ -61,20 +61,23 @@ export class FirebaseEventRepository{
 
         return onValue(ref(this.db, `dashboardData/${dashboard}/collections`), snapshot => {
           if (snapshot !== undefined){
-            const collections = Object.entries(snapshot.val() || {}).map( col => {
-              const events = Object.entries(col[1].events || {}).map( val => {
+
+            const data = snapshot.val() || {} as {[key: string]: {title: string, events: Array<EventDTO>, order: number}};
+
+            const collections = Object.keys(data).map(collectionKey => {
+              const events = Object.keys(data[collectionKey].events || {}).map(eventKey => {
                 return new Event({
-                  key: val[0],
-                  title: val[1].title,
-                  plannedStartDate: val[1].plannedStartDate === undefined ? new Date() : new Date(val[1].plannedStartDate),
-                  plannedFinishDate: val[1].plannedFinishDate === undefined ? null : new Date(val[1].plannedFinishDate),
-                  startDate: val[1].startDate === undefined ? null : new Date(val[1].startDate),
-                  finishDate: val[1].finishDate === undefined ? null : new Date(val[1].finishDate),
-                  started: val[1].started,
-                  finished: val[1].finished
+                  key: eventKey,
+                  title: data[collectionKey].events[eventKey].title,
+                  plannedStartDate: data[collectionKey].events[eventKey].plannedStartDate === undefined ? new Date() : new Date(data[collectionKey].events[eventKey].plannedStartDate),
+                  plannedFinishDate: data[collectionKey].events[eventKey].plannedFinishDate === undefined ? null : new Date(data[collectionKey].events[eventKey].plannedFinishDate),
+                  startDate: data[collectionKey].events[eventKey].startDate === undefined ? null : new Date(data[collectionKey].events[eventKey].startDate),
+                  finishDate: data[collectionKey].events[eventKey].finishDate === undefined ? null : new Date(data[collectionKey].events[eventKey].finishDate),
+                  started: data[collectionKey].events[eventKey].started,
+                  finished: data[collectionKey].events[eventKey].finished
                 })
               });
-              return new EventCollection({key: col[0], title: col[1].title, events: events, order: col[1].order})
+              return new EventCollection({key: collectionKey, title: data[collectionKey].title, events: events, order: data[collectionKey].order})
             });
             collections.sort((a, b) => a.order-b.order);
             successCallback(collections);
@@ -90,7 +93,7 @@ export class FirebaseEventRepository{
 
   }
 
-  setEventCollection(dashboard, collection) {
+  setEventCollection(dashboard: string, collection: EventCollection) {
     let events = {}
     collection.events.forEach(e => {
       events[e.key] = {
@@ -103,7 +106,7 @@ export class FirebaseEventRepository{
         finished: e.finished,
       }
     })
-    console.log(collection)
+
     set(ref(this.db, `dashboardData/${dashboard}/collections/${collection.key}`), {
       title: collection.title,
       events: events,
@@ -111,7 +114,7 @@ export class FirebaseEventRepository{
     })
   }
 
-  addEventCollection(dashboard, collectionData) {
+  addEventCollection(dashboard: string, collectionData: {title: string}) {
     push(ref(this.db, `dashboardData/${dashboard}/collections`), {
       title: collectionData.title || 'New collection',
       order: 1000,  //  more than 1000 collections is not allowed
@@ -136,11 +139,11 @@ export class FirebaseEventRepository{
 
   }
 
-  deleteEventCollection(dashboard, key) {
+  deleteEventCollection(dashboard: string, key: string) {
     set(ref(this.db, `dashboardData/${dashboard}/collections/${key}`), null);
   }
 
-  duplicateEventCollection(dashboard, key) {
+  duplicateEventCollection(dashboard: string, key: string) {
 
     // push a temporary collection
     const newKey = push(ref(this.db, `dashboardData/${dashboard}/collections`)).key;
@@ -174,8 +177,8 @@ export class FirebaseEventRepository{
     });
   }
 
-  addEvent(dashboard, collection, eventData) {
-    push(ref(this.db, `dashboardData/${dashboard}/collections/${collection.key}/events`), {
+  addEvent(dashboard: string, collection: string, eventData: EventData) {
+    push(ref(this.db, `dashboardData/${dashboard}/collections/${collection}/events`), {
       title: eventData.title,
       plannedStartDate: eventData.plannedStartDate.getTime(),
       plannedFinishDate: eventData.plannedFinishDate === null ? null : eventData.plannedFinishDate.getTime(),
@@ -186,11 +189,11 @@ export class FirebaseEventRepository{
     });
   }
 
-  deleteEvent(dashboard, collection, key) {
-    set(ref(this.db, `dashboardData/${dashboard}/collections/${collection.key}/events/${key}`), null);
+  deleteEvent(dashboard: string, collection: string, key: string) {
+    set(ref(this.db, `dashboardData/${dashboard}/collections/${collection}/events/${key}`), null);
   }
 
-  overwriteEventCollections(dashboard, collections){
+  overwriteEventCollections(dashboard: string, collections: Array<EventCollection>){
     runTransaction(ref(this.db, `dashboardData/${dashboard}/collections`), () => {
       let collectionsObject = {};
       collections.forEach((collection) => {

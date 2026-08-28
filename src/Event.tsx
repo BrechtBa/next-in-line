@@ -9,11 +9,15 @@ import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import CreateIcon from '@mui/icons-material/Create';
 import DeleteIcon from '@mui/icons-material/Delete';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import './style.css';
 
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import type { Event } from './Domain';
+import { useCases } from './UseCases';
 
 
 function EventDuration(props){
@@ -118,10 +122,10 @@ export function EditEventDialog(props) {
           <div>
             <Stack spacing={2}>
               <TextField value={eventData.title} onChange={e => setEventData({...eventData, title: e.target.value})} label="Title" />
-              <DateTimePicker label='Planned Start' value={eventData.plannedStartDate} onChange={date => setEventData({...eventData, plannedStartDate: new Date(date.setSeconds(0))})} ampm={false} renderInput={(params) => <TextField {...params} />} />
+              <DateTimePicker label='Planned Start' value={eventData.plannedStartDate} onChange={date => setEventData({...eventData, plannedStartDate: new Date(date.setSeconds(0))})} ampm={false} />
 
-              <FormControlLabel control={<Switch checked={eventData.started} onChange={e => setEventData({...eventData, started: !eventData.started})}/>} label="Started" />
-              <FormControlLabel control={<Switch checked={eventData.finished} onChange={e => setEventData({...eventData, finished: !eventData.finished})}/>} label="Finished" />
+              <FormControlLabel control={<Switch checked={eventData.started} onChange={() => setEventData({...eventData, started: !eventData.started})}/>} label="Started" />
+              <FormControlLabel control={<Switch checked={eventData.finished} onChange={() => setEventData({...eventData, finished: !eventData.finished})}/>} label="Finished" />
             </Stack>
           </div>
           <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
@@ -131,26 +135,28 @@ export function EditEventDialog(props) {
         </LocalizationProvider>
       </div>
     </Dialog>
-)
-
+  )
 }
 
 
-export function EventComponent(props) {
-  const event = props.event;
-  const edit = props.edit || false;
-  const setEvent = props.setEvent;
-  const deleteEvent = props.deleteEvent;
+export function EventComponent({dashboard, eventCollection, event, edit, setEvent, deleteEvent}: {dashboard: string, eventCollection: string, event: Event, edit: boolean, setEvent: (event: Event) => void, deleteEvent: (key: string) => void}) {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isFavorite, setEventIsFavorite] = useState(useCases.getEventIsFavorite(dashboard, eventCollection, event.key));
+
 
   const handleDelete = () => {
     setDeleteDialogOpen(false);
     deleteEvent(event.key);
+    //useCases.deleteEvent(dashboard, eventCollection, event.key);
+  }
+  const handleFavorite = ()  => {
+    useCases.setEventIsFavorite(dashboard, eventCollection, event.key, !isFavorite)
+    setEventIsFavorite( !isFavorite)
   }
 
-  const getBackgroundColor = (event) => {
+  const getBackgroundColor = (event: Event) => {
     if(!event.started){
       return 'rgb(255, 255, 255)';
     }
@@ -173,6 +179,14 @@ export function EventComponent(props) {
             </IconButton>
             <IconButton aria-label="Example" onClick={()=>setDeleteDialogOpen(true)}>
               <DeleteIcon />
+            </IconButton>
+          </div>
+        )}
+
+        {!edit && (
+          <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+            <IconButton aria-label="Example" onClick={handleFavorite}>
+              {isFavorite ? <FavoriteIcon sx={{ color: "red" }}/> :  <FavoriteBorderIcon />}
             </IconButton>
           </div>
         )}

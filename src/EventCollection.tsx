@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router";
 
 import './style.css';
 
@@ -21,11 +21,9 @@ import { FileDrop } from 'react-file-drop'
 
 import { EventComponent, EditEventDialog } from './Event.js'
 
-import { EventCollection } from './Domain.js'
-import { getRepository } from './repository/firebase.js'
+import { EventCollection, type EventCollectionData, type EventData } from './Domain.js'
+import { CouldNotParseError, ImportError, InvalidInputError, useCases } from './UseCases.js';
 
-
-const repository = getRepository();
 
 
 function EditCollectionDialog(props) {
@@ -75,11 +73,7 @@ function EditCollectionDialog(props) {
 }
 
 
-function EventCollectionComponent(props) {
-  const dashboard = props.dashboard;
-  const eventCollection = props.eventCollection;
-  const edit = props.edit || false;
-  const setEventCollection = props.setEventCollection;
+function EventCollectionComponent({dashboard, eventCollection, edit, setEventCollection}: {dashboard:string, eventCollection: EventCollection, edit: boolean, setEventCollection: (collection: EventCollection) => void}) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [addEventDialogOpen, setAddEventDialogOpen] = useState(false);
@@ -87,35 +81,22 @@ function EventCollectionComponent(props) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const setEvent = (event) => {
-    const newEvents = eventCollection.events.map(e => {
-      if(e.key === event.key) {
-        return event;
-      }
-      return e;
-    })
-    const newCollection = new EventCollection({
-      key: eventCollection.key,
-      title: eventCollection.title,
-      order: eventCollection.order,
-      events: newEvents
-    });
-    repository.setEventCollection(dashboard, newCollection);
-    setEventCollection(newCollection);
+    setEventCollection(useCases.setEvent(dashboard, eventCollection, event));
   }
-  const deleteEvent = (key) => {
-    repository.deleteEvent(dashboard, eventCollection, key);
+  const deleteEvent = (key: string) => {
+    useCases.deleteEvent(dashboard, eventCollection.key, key);
   }
 
-  const addEvent = (eventData) => {
-    repository.addEvent(dashboard, eventCollection, eventData);
+  const addEvent = (eventData: EventData) => {
+    useCases.addEvent(dashboard, eventCollection.key, eventData);
   }
 
   const handleDelete = () => {
     setDeleteDialogOpen(false);
-    repository.deleteEventCollection(dashboard, eventCollection.key);
+    useCases.deleteEventCollection(dashboard, eventCollection.key);
   }
   const duplicateCollection = () => {
-    repository.duplicateEventCollection(dashboard, eventCollection.key);
+    useCases.duplicateEventCollection(dashboard, eventCollection.key);
   }
 
   return (
@@ -156,7 +137,7 @@ function EventCollectionComponent(props) {
 
             <div>
               {eventCollection.getEvents(true).map(event => (
-                <EventComponent key={event.key} event={event} setEvent={setEvent} deleteEvent={deleteEvent} edit={edit}/>
+                <EventComponent key={event.key}  dashboard={dashboard} eventCollection={eventCollection.key} event={event} setEvent={setEvent} deleteEvent={deleteEvent} edit={edit}/>
               ))}
             </div>
 
@@ -193,7 +174,7 @@ function EventCollectionComponent(props) {
 }
 
 
-export function ViewEventCollections(props) {
+export function ViewEventCollections() {
 
   const { dashboard, token } = useParams();
   const navigate = useNavigate();
@@ -208,7 +189,8 @@ export function ViewEventCollections(props) {
   const [editTokenInput, setEditTokenInput] = useState('');
 
   useEffect(() => {
-    repository.onEventCollectionsChanged(dashboard, collections => {
+
+    useCases.onEventCollectionsChanged(dashboard, collections => {
       setEventCollections(collections);
     }, () => {
       navigate('/');
@@ -217,7 +199,7 @@ export function ViewEventCollections(props) {
 
   useEffect(() => {
     if(token !== undefined){
-      repository.editAllowed(dashboard, token, () => {
+      useCases.editAllowed(dashboard, token, () => {
         setEdit(true);
       }, (error) => {
         setEdit(false);
@@ -229,12 +211,12 @@ export function ViewEventCollections(props) {
     }
   }, [dashboard, token]);
 
-  const setEventCollection = (collection) => {
-    repository.setEventCollection(dashboard, collection);
+  const setEventCollection = (collection: EventCollection) => {
+    useCases.setEventCollection(dashboard, collection);
   }
 
-  const addCollection = (collectionData) => {
-    repository.addEventCollection(dashboard, collectionData)
+  const addCollection = (collectionData: EventCollectionData) => {
+    useCases.addEventCollection(dashboard, collectionData)
   };
 
   const closeAndNavigate = () => {
@@ -261,29 +243,26 @@ export function ViewEventCollections(props) {
     reader.readAsText(files[0], "UTF-8");
     reader.onload = function (evt) {
       try {
-        const data = JSON.parse(evt.target.result);
-        console.log(data)
-        try {
-          const eventCollections = data.map(e => EventCollection.fromObject(e));
-            try {
-              repository.overwriteEventCollections(dashboard, eventCollections);
-              setImportDialogOpen(false);
-            }
-            catch (e){
-              setImportErrorMessage("Error during importing!");
-              console.log(e);
-            }
+        useCases.importEventCollections(dashboard, evt.target.result as string);
+        setImportDialogOpen(false);
+      }  
+      catch (e) {
+        console.log(e instanceof InvalidInputError)
+        if (e instanceof ImportError) {
+          setImportErrorMessage("Error during importing!");
         }
-        catch {
-          setImportErrorMessage("Data could not be parsed!");
+        else if (e instanceof CouldNotParseError) {
+          setImportErrorMessage("Error during importing!");
+        }
+        else if (e instanceof InvalidInputError) {
+          setImportErrorMessage("File could not be read!");
+        }
+        else {
+          throw e;
         }
       }
-      catch {
-        setImportErrorMessage("File could not be read!");
-      }
-
     }
-    reader.onerror = function (evt) {
+    reader.onerror = function () {
         console.log("error reading file");
     }
 
@@ -292,7 +271,7 @@ export function ViewEventCollections(props) {
   return (
     <div>
 
-      <div style={{display: 'flex', flexDirection: 'row', wrap: 'wrap'}}>
+      <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
         {eventCollections.filter(c => (edit || (c.getEvents(edit).length > 0))).map(collection => (
           <EventCollectionComponent key={collection.key} dashboard={dashboard} eventCollection={collection} setEventCollection={setEventCollection} edit={edit}/>
         ))}
@@ -303,7 +282,8 @@ export function ViewEventCollections(props) {
             <Fab color="primary" aria-label="add" onClick={() => setAddEventCollectionDialogOpen(true)}>
               <AddIcon />
             </Fab>
-            <EditCollectionDialog open={addEventCollectionDialogOpen} setOpen={setAddEventCollectionDialogOpen} onSave={collectionData => addCollection(collectionData)} collection={null}/>
+            
+            <EditCollectionDialog open={addEventCollectionDialogOpen} setOpen={setAddEventCollectionDialogOpen} onSave={(collectionData: EventCollectionData) => addCollection(collectionData)} collection={null}/>
           </Paper>
         )}
       </div>
@@ -333,7 +313,7 @@ export function ViewEventCollections(props) {
               <div style={{margin: '1em'}}>
                 <h1>Importing will delete all data</h1>
                 <div style={{color: "#f00"}}>{importErrorMessage}</div>
-                <FileDrop onDrop={(files, event) => onFileInputChange(files)} onTargetClick={() => fileInputRef.current.click()}>
+                <FileDrop onDrop={(files) => onFileInputChange(files)} onTargetClick={() => fileInputRef.current.click()}>
                   <div style={{width: "20em", height: "10em", backgroundColor: '#f0f0f0', border: "1px dashed #aaa", display: "flex", justifyContent: "center", alignItems: "center"}}>
                     Drop a .json file here.
                   </div>
@@ -368,7 +348,7 @@ export function ViewEventCollections(props) {
 
         { edit && (
           <div style={{display: 'flex', margin: '2em'}}>
-            <Button onClick={() => navigate(`/${dashboard}`)} variant="outlined">View dashboard</Button>
+            <Link to={`/${dashboard}`} target="_blank" rel="noopener noreferrer"><Button variant="outlined">View dashboard</Button></Link>
           </div>
         )}
 
@@ -385,7 +365,7 @@ export function ViewEventCollections(props) {
         )}
 
         <div style={{display: 'flex', margin: '2em'}}>
-          <Button onClick={() => navigate('/')} variant="outlined">Home</Button>
+          <Link to="/"><Button variant="outlined">Home</Button></Link>
         </div>
       </div>
 

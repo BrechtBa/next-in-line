@@ -1,13 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import Dialog from '@mui/material/Dialog';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-
-import { getRepository } from './repository/firebase.js'
-
-const repository = getRepository();
+import { useCases } from './UseCases.js';
 
 
 export function ViewHome() {
@@ -18,7 +15,7 @@ export function ViewHome() {
 
 
   const createNewDashboard = () => {
-    repository.addDashboard((newDashboardKey, newToken) => {
+    useCases.addDashboard((newDashboardKey: string, newToken: string) => {
       if(newDashboardKey !== null) {
         navigate(`/${newDashboardKey}/${newToken}`);
       }
