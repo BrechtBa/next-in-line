@@ -1,5 +1,4 @@
 export type EventData = {
-  key: string;
   title: string;
   plannedStartDate: Date;
   plannedFinishDate: Date | null;
@@ -7,7 +6,6 @@ export type EventData = {
   finishDate: Date | null;
   started: boolean;
   finished: boolean;
-  favorite?: boolean;
 }
 
 
@@ -21,8 +19,8 @@ export class Event {
   started: boolean;
   finished: boolean;
 
-  constructor(args: EventData) {
-    this.key = args.key;
+  constructor(key: string, args: EventData) {
+    this.key = key;
     this.title = args.title;
     this.plannedStartDate = args.plannedStartDate || new Date();
     this.plannedFinishDate = args.plannedFinishDate || null;
@@ -33,15 +31,15 @@ export class Event {
   }
 
   start() {
-    return new Event({
-      key: this.key, title: this.title, plannedStartDate: this.plannedStartDate, plannedFinishDate: this.plannedFinishDate,
+    return new Event(this.key, {
+      title: this.title, plannedStartDate: this.plannedStartDate, plannedFinishDate: this.plannedFinishDate,
       startDate: new Date(), finishDate: this.finishDate, started: true, finished: false
     });
   }
 
   finish() {
-    return new Event({
-      key: this.key, title: this.title, plannedStartDate: this.plannedStartDate, plannedFinishDate: this.plannedFinishDate,
+    return new Event(this.key, {
+      title: this.title, plannedStartDate: this.plannedStartDate, plannedFinishDate: this.plannedFinishDate,
       startDate: this.startDate, finishDate: new Date(), started: true, finished: true
     });
   }
@@ -51,8 +49,7 @@ export class Event {
       eventData.startDate = new Date();
     }
 
-    return new Event({
-      key: this.key,
+    return new Event(this.key, {
       ...{
         title: this.title,
         plannedStartDate: this.plannedStartDate,
@@ -67,10 +64,10 @@ export class Event {
   }
 
   getDuration(): number {
-    if(this.finished){
+    if(this.finished && this.finishDate !== null && this.startDate !== null){
       return this.finishDate.getTime() - this.startDate.getTime();
     }
-    if(this.started){
+    if(this.started && this.startDate !== null){
       const now = new Date();
       return now.getTime() - this.startDate.getTime();
     }
@@ -80,17 +77,16 @@ export class Event {
   }
 
   getStartDate(): Date {
-    if(this.started){
+    if(this.started && this.startDate !== null){
       return this.startDate;
     }
     return this.plannedStartDate;
   }
 
-  static fromObject(obj: EventData) {
-    return new Event({
-      key: obj.key,
+  static fromObject(key: string, obj: EventData) {
+    return new Event(key, {
       title: obj.title,
-      plannedStartDate: obj.plannedStartDate === null ? null : new Date(obj.plannedStartDate),
+      plannedStartDate: new Date(obj.plannedStartDate),
       plannedFinishDate: obj.plannedFinishDate === null ? null : new Date(obj.plannedFinishDate),
       startDate: obj.startDate === null ? null : new Date(obj.startDate),
       finishDate: obj.finishDate === null ? null : new Date(obj.finishDate),
@@ -128,7 +124,7 @@ export class EventCollection {
     return new EventCollection({key: this.key, title: this.title, events: events, order: this.order});
   }
 
-  update(collectionData: EventCollectionData) {
+  update(collectionData: {title?: string, order?: number}) {
     return new EventCollection({
       key: this.key,
       title: collectionData.title || this.title,
@@ -141,7 +137,7 @@ export class EventCollection {
     return this.events.filter(e => finished || !e.finished ).sort(this.eventSorting);
   }
 
-  eventSorting(a, b) {
+  eventSorting(a: Event, b: Event) {
     if(a.plannedStartDate < b.plannedStartDate) {
       return -1;
     }
@@ -153,7 +149,7 @@ export class EventCollection {
       key: obj.key,
       title: obj.title,
       order: obj.order,
-      events: obj.events.map(event => Event.fromObject(event))
+      events: obj.events.map(event => Event.fromObject(event.key, event))
     })
 
   }

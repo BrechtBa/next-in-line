@@ -7,14 +7,22 @@ import type { EventRepository } from "./interface.js";
 
 
 type EventDTO = {
-  key: string;
   title: string;
-  plannedStartDate?: number;
-  plannedFinishDate?: number;
-  startDate?: number;
-  finishDate?: number;
+  plannedStartDate: number | null;
+  plannedFinishDate?: number | null;
+  startDate?: number | null;
+  finishDate?: number | null;
   started: boolean;
   finished: boolean;
+}
+
+
+type CollectionDTO = {
+  title: string;
+  events: {
+    [key: string]: EventDTO;
+  },
+  order: number,
 }
 
 
@@ -62,12 +70,11 @@ export class FirebaseEventRepository implements EventRepository{
         return onValue(ref(this.db, `dashboardData/${dashboard}/collections`), snapshot => {
           if (snapshot !== undefined){
 
-            const data = snapshot.val() || {} as {[key: string]: {title: string, events: Array<EventDTO>, order: number}};
+            const data = snapshot.val() || {} as {[key: string]: {title: string, events: {[key: string]: EventDTO}, order: number}};
 
             const collections = Object.keys(data).map(collectionKey => {
               const events = Object.keys(data[collectionKey].events || {}).map(eventKey => {
-                return new Event({
-                  key: eventKey,
+                return new Event(eventKey, {
                   title: data[collectionKey].events[eventKey].title,
                   plannedStartDate: data[collectionKey].events[eventKey].plannedStartDate === undefined ? new Date() : new Date(data[collectionKey].events[eventKey].plannedStartDate),
                   plannedFinishDate: data[collectionKey].events[eventKey].plannedFinishDate === undefined ? null : new Date(data[collectionKey].events[eventKey].plannedFinishDate),
@@ -94,7 +101,8 @@ export class FirebaseEventRepository implements EventRepository{
   }
 
   setEventCollection(dashboard: string, collection: EventCollection) {
-    let events = {}
+    let events: {[key: string]: EventDTO} = {};
+    
     collection.events.forEach(e => {
       events[e.key] = {
         title: e.title,
@@ -195,9 +203,11 @@ export class FirebaseEventRepository implements EventRepository{
 
   overwriteEventCollections(dashboard: string, collections: Array<EventCollection>){
     runTransaction(ref(this.db, `dashboardData/${dashboard}/collections`), () => {
-      let collectionsObject = {};
+      let collectionsObject: {[key: string]: CollectionDTO} = {};
       collections.forEach((collection) => {
-        let events = {};
+
+        let events: {[key: string]: EventDTO} = {};
+
         collection.events.forEach(e => {
           events[e.key] = {
             title: e.title,

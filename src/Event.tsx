@@ -16,12 +16,11 @@ import './style.css';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import type { Event } from './Domain';
+import type { Event, EventData } from './Domain';
 import { useCases } from './UseCases';
 
 
-function EventDuration(props){
-  const event = props.event;
+function EventDuration({event}: {event: Event}){
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
@@ -34,7 +33,7 @@ function EventDuration(props){
     }
   }, [event]);
 
-  const formatDuration = duration => {
+  const formatDuration = (duration: number) => {
     const hours = Math.floor(duration/1000/3600)
     const minutes = Math.floor((duration/1000 - hours*3600)/60)
     const seconds = Math.floor((duration/1000 - hours*3600 - minutes*60))
@@ -53,7 +52,7 @@ function EventDuration(props){
   )
 }
 
-const formatDateTime = (date) => {
+const formatDateTime = (date: Date | null) => {
   if(date === null){
     return (
       <div></div>
@@ -68,13 +67,9 @@ const formatDateTime = (date) => {
   );
 }
 
-export function EditEventDialog(props) {
-  const open = props.open;
-  const setOpen = props.setOpen;
-  const onSave = props.onSave;
-  const event = props.event;
+export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, setOpen: (open: boolean) => void, onSave: (eventData: EventData) => void, event: Event | null}) {
 
-  const [eventData, setEventData] = useState({
+  const [eventData, setEventData] = useState<EventData>({
     title: 'New Event',
     plannedStartDate: new Date(),
     plannedFinishDate: null,
@@ -122,7 +117,7 @@ export function EditEventDialog(props) {
           <div>
             <Stack spacing={2}>
               <TextField value={eventData.title} onChange={e => setEventData({...eventData, title: e.target.value})} label="Title" />
-              <DateTimePicker label='Planned Start' value={eventData.plannedStartDate} onChange={date => setEventData({...eventData, plannedStartDate: new Date(date.setSeconds(0))})} ampm={false} />
+              <DateTimePicker label='Planned Start' value={eventData.plannedStartDate} onChange={date => date !== null && setEventData({...eventData, plannedStartDate: new Date(date.setSeconds(0))})} ampm={false} />
 
               <FormControlLabel control={<Switch checked={eventData.started} onChange={() => setEventData({...eventData, started: !eventData.started})}/>} label="Started" />
               <FormControlLabel control={<Switch checked={eventData.finished} onChange={() => setEventData({...eventData, finished: !eventData.finished})}/>} label="Finished" />
@@ -153,7 +148,7 @@ export function EventComponent({dashboard, eventCollection, event, edit, setEven
   }
   const handleFavorite = ()  => {
     useCases.setEventIsFavorite(dashboard, eventCollection, event.key, !isFavorite)
-    setEventIsFavorite( !isFavorite)
+    setEventIsFavorite(!isFavorite)
   }
 
   const getBackgroundColor = (event: Event) => {

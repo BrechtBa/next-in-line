@@ -1,4 +1,4 @@
-import { Event, EventCollection, type EventData } from "./Domain";
+import { Event, EventCollection, type EventCollectionData, type EventData } from "./Domain";
 import { getRepository } from "./repository/firebase";
 import { getRepository as getUserDataRepository } from "./repository/userEvent";
 import type { EventRepository, UserEventRepository } from "./repository/interface";
@@ -54,6 +54,20 @@ class UseCases {
     this.repository.addDashboard(dashboard, editToken, callback, errorCallback);
   }
 
+  getDashboardAdminLink(dashboard: string | undefined, editToken: string | undefined): string {
+    if(dashboard === undefined || editToken === undefined) {
+      return ""
+    }
+    return `${window.location.origin}/${dashboard}/${editToken}`
+  }
+
+  getDashboardViewLink(dashboard: string | undefined): string {
+    if(dashboard === undefined) {
+      return ""
+    }
+    return `${window.location.origin}/${dashboard}`
+  }
+
   editAllowed(dashboard: string, editToken: string, successCallback: () => void, errorCallback: (error: string) => void) {
     this.repository.editAllowed(dashboard, editToken, successCallback, errorCallback);
   }
@@ -104,7 +118,7 @@ class UseCases {
     try {
       const data = JSON.parse(val);
       try {
-        const eventCollections = data.map(e => EventCollection.fromObject(e));
+        const eventCollections = data.map((e: EventCollectionData) => EventCollection.fromObject(e));
         try {
           this.repository.overwriteEventCollections(dashboard, eventCollections);
           return

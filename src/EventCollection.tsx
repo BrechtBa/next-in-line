@@ -9,6 +9,7 @@ import AddIcon from '@mui/icons-material/Add';
 import IconButton from '@mui/material/IconButton';
 import CreateIcon from '@mui/icons-material/Create';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ShareIcon from '@mui/icons-material/Share';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -16,23 +17,19 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
+import Snackbar from '@mui/material/Snackbar';
 
 import { FileDrop } from 'react-file-drop'
 
-import { EventComponent, EditEventDialog } from './Event.js'
+import { EventComponent, EditEventDialog } from './Event'
 
-import { EventCollection, type EventCollectionData, type EventData } from './Domain.js'
-import { CouldNotParseError, ImportError, InvalidInputError, useCases } from './UseCases.js';
+import { Event, EventCollection, type EventData } from './Domain'
+import { CouldNotParseError, ImportError, InvalidInputError, useCases } from './UseCases';
 
 
+function EditCollectionDialog({collection, open, setOpen, onSave}: {collection: EventCollection | null, open: boolean, setOpen: (val: boolean) => void, onSave: (collection: {title: string}) => void}) {
 
-function EditCollectionDialog(props) {
-  const collection = props.collection;
-  const open = props.open;
-  const setOpen = props.setOpen;
-  const onSave = props.onSave;
-
- const [collectionData, setCollectionData] = useState({
+ const [collectionData, setCollectionData] = useState<{title: string}>({
     title: 'New Collection',
   })
 
@@ -73,14 +70,14 @@ function EditCollectionDialog(props) {
 }
 
 
-function EventCollectionComponent({dashboard, eventCollection, edit, setEventCollection}: {dashboard:string, eventCollection: EventCollection, edit: boolean, setEventCollection: (collection: EventCollection) => void}) {
+function EventCollectionComponent({dashboard, eventCollection, edit, setEventCollection}: {dashboard: string, eventCollection: EventCollection, edit: boolean, setEventCollection: (collection: EventCollection) => void}) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [addEventDialogOpen, setAddEventDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const setEvent = (event) => {
+  const setEvent = (event: Event) => {
     setEventCollection(useCases.setEvent(dashboard, eventCollection, event));
   }
   const deleteEvent = (key: string) => {
@@ -158,7 +155,7 @@ function EventCollectionComponent({dashboard, eventCollection, edit, setEventCol
       </div>
 
       <EditEventDialog open={addEventDialogOpen} setOpen={setAddEventDialogOpen} onSave={eventData => addEvent(eventData)} event={null} />
-      <EditCollectionDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={collectionData => setEventCollection(eventCollection.update(collectionData))} collection={eventCollection}/>
+      <EditCollectionDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={(collectionData: {title?: string, order?: number}) => setEventCollection(eventCollection.update(collectionData))} collection={eventCollection}/>
 
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <div style={{margin: '1em'}}>
@@ -180,16 +177,20 @@ export function ViewEventCollections() {
   const navigate = useNavigate();
 
   const [edit, setEdit] = useState(false);
-  const [eventCollections, setEventCollections] = useState([])
+  const [eventCollections, setEventCollections] = useState<Array<EventCollection>>([])
   const [addEventCollectionDialogOpen, setAddEventCollectionDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importErrorMessage, setImportErrorMessage] = useState('');
   const [editTokenInput, setEditTokenInput] = useState('');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   useEffect(() => {
-
+    if(dashboard === undefined) {
+      navigate('/');
+      return
+    }
     useCases.onEventCollectionsChanged(dashboard, collections => {
       setEventCollections(collections);
     }, () => {
@@ -198,7 +199,7 @@ export function ViewEventCollections() {
   }, [dashboard, navigate]);
 
   useEffect(() => {
-    if(token !== undefined){
+    if(dashboard !== undefined && token !== undefined){
       useCases.editAllowed(dashboard, token, () => {
         setEdit(true);
       }, (error) => {
@@ -212,10 +213,16 @@ export function ViewEventCollections() {
   }, [dashboard, token]);
 
   const setEventCollection = (collection: EventCollection) => {
+    if(dashboard === undefined) {
+      return
+    }
     useCases.setEventCollection(dashboard, collection);
   }
 
-  const addCollection = (collectionData: EventCollectionData) => {
+  const addCollection = (collectionData: {title: string}) => {
+    if(dashboard === undefined) {
+      return
+    }
     useCases.addEventCollection(dashboard, collectionData)
   };
 
@@ -236,12 +243,20 @@ export function ViewEventCollections() {
     downloadAnchorNode.remove();
   }
 
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const onFileInputChange = (files) => {
+  const onFileInputChange = (files: any) => {
     var reader = new FileReader();
     reader.readAsText(files[0], "UTF-8");
     reader.onload = function (evt) {
+      if(evt.target === null) {
+        setImportErrorMessage("Something went wrong");
+        return
+      }
+      if(dashboard === undefined) {
+        setImportErrorMessage("Something went wrong");
+        return
+      }
       try {
         useCases.importEventCollections(dashboard, evt.target.result as string);
         setImportDialogOpen(false);
@@ -265,12 +280,24 @@ export function ViewEventCollections() {
     reader.onerror = function () {
         console.log("error reading file");
     }
+  }
 
+  const shareUrl = (url: string) => {
+    try {
+      navigator.share({url: url});
+    }
+    catch {
+      navigator.clipboard.writeText(url);
+      setSnackbarOpen(true)
+    }
+  }
+
+  if(dashboard === undefined) {
+    return
   }
 
   return (
     <div>
-
       <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
         {eventCollections.filter(c => (edit || (c.getEvents(edit).length > 0))).map(collection => (
           <EventCollectionComponent key={collection.key} dashboard={dashboard} eventCollection={collection} setEventCollection={setEventCollection} edit={edit}/>
@@ -282,8 +309,8 @@ export function ViewEventCollections() {
             <Fab color="primary" aria-label="add" onClick={() => setAddEventCollectionDialogOpen(true)}>
               <AddIcon />
             </Fab>
-            
-            <EditCollectionDialog open={addEventCollectionDialogOpen} setOpen={setAddEventCollectionDialogOpen} onSave={(collectionData: EventCollectionData) => addCollection(collectionData)} collection={null}/>
+
+            <EditCollectionDialog open={addEventCollectionDialogOpen} setOpen={setAddEventCollectionDialogOpen} onSave={(collectionData: {title: string}) => addCollection(collectionData)} collection={null}/>
           </Paper>
         )}
       </div>
@@ -297,8 +324,32 @@ export function ViewEventCollections() {
             <Dialog open={detailsDialogOpen} onClose={() => setDetailsDialogOpen(false)}>
               <div style={{margin: '1em'}}>
                 <h1>Dashboard details</h1>
-                <div>Dashboard key: {dashboard}</div>
-                <div>Dashboard admin token: {token}</div>
+                <div>
+                  <div style={{fontWeight: "bold"}}>Dashboard key:</div>
+                  <div style={{display: "flex", flexDirection: "row", marginLeft: "1em", minHeight: "2em", alignItems: "center", justifyContent: "space-between"}}>{dashboard}</div>
+                </div>
+                <div>
+                  <div style={{fontWeight: "bold"}}>Dashboard admin token:</div>
+                  <div style={{display: "flex", flexDirection: "row", marginLeft: "1em", minHeight: "2em", alignItems: "center", justifyContent: "space-between"}}>{token}</div>
+                </div>
+                <div>
+                  <div style={{fontWeight: "bold"}}>Dashboard admin link:</div>
+                  <div style={{display: "flex", flexDirection: "row", marginLeft: "1em", minHeight: "2em", alignItems: "center", justifyContent: "space-between"}}>
+                    <div>{useCases.getDashboardAdminLink(dashboard, token)}</div>
+                    <IconButton aria-label="Share" onClick={() => shareUrl(useCases.getDashboardAdminLink(dashboard, token))} style={{marginLeft: "1em"}}>
+                      <ShareIcon />
+                    </IconButton>
+                  </div>
+                </div>
+                <div>
+                  <div style={{fontWeight: "bold"}}>Dashboard view link:</div>
+                  <div style={{display: "flex", flexDirection: "row", marginLeft: "1em", minHeight: "2em", alignItems: "center", justifyContent: "space-between"}}>
+                    <div>{useCases.getDashboardViewLink(dashboard)}</div>
+                    <IconButton aria-label="Share" onClick={() => shareUrl(useCases.getDashboardViewLink(dashboard))} style={{marginLeft: "1em"}}>
+                      <ShareIcon />
+                    </IconButton>
+                  </div>
+                </div>
                 <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
                   <Button onClick={() => setDetailsDialogOpen(false)}>close</Button>
                 </div>
@@ -313,7 +364,7 @@ export function ViewEventCollections() {
               <div style={{margin: '1em'}}>
                 <h1>Importing will delete all data</h1>
                 <div style={{color: "#f00"}}>{importErrorMessage}</div>
-                <FileDrop onDrop={(files) => onFileInputChange(files)} onTargetClick={() => fileInputRef.current.click()}>
+                <FileDrop onDrop={(files) => onFileInputChange(files)} onTargetClick={() => fileInputRef.current !== null && fileInputRef.current.click()}>
                   <div style={{width: "20em", height: "10em", backgroundColor: '#f0f0f0', border: "1px dashed #aaa", display: "flex", justifyContent: "center", alignItems: "center"}}>
                     Drop a .json file here.
                   </div>
@@ -367,6 +418,14 @@ export function ViewEventCollections() {
         <div style={{display: 'flex', margin: '2em'}}>
           <Link to="/"><Button variant="outlined">Home</Button></Link>
         </div>
+
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={() => setSnackbarOpen(false)}
+          message="Link copied to clipboard"
+        />
+
       </div>
 
     </div>
