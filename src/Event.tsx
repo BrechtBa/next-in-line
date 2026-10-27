@@ -180,7 +180,7 @@ export function EventComponent({dashboard, eventCollection, event, edit, setEven
 
         {!edit && (
           <div style={{display: 'flex', justifyContent: 'flex-end'}}>
-            <IconButton aria-label="Example" onClick={handleFavorite}>
+            <IconButton aria-label="Favorite" onClick={handleFavorite}>
               {isFavorite ? <FavoriteIcon sx={{ color: "red" }}/> :  <FavoriteBorderIcon />}
             </IconButton>
           </div>

@@ -10,6 +10,8 @@ import IconButton from '@mui/material/IconButton';
 import CreateIcon from '@mui/icons-material/Create';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ShareIcon from '@mui/icons-material/Share';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -70,7 +72,7 @@ function EditCollectionDialog({collection, open, setOpen, onSave}: {collection: 
 }
 
 
-function EventCollectionComponent({dashboard, eventCollection, edit, setEventCollection}: {dashboard: string, eventCollection: EventCollection, edit: boolean, setEventCollection: (collection: EventCollection) => void}) {
+function EventCollectionComponent({dashboard, eventCollection, edit, filterFavorites, setEventCollection}: {dashboard: string, eventCollection: EventCollection, edit: boolean, filterFavorites: boolean, setEventCollection: (collection: EventCollection) => void}) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [addEventDialogOpen, setAddEventDialogOpen] = useState(false);
@@ -95,6 +97,16 @@ function EventCollectionComponent({dashboard, eventCollection, edit, setEventCol
   const duplicateCollection = () => {
     useCases.duplicateEventCollection(dashboard, eventCollection.key);
   }
+
+  const eventFilter = (event: Event): boolean =>  {
+    if(edit) {
+      return true;
+    }
+    if(!filterFavorites) {
+      return true;
+    }
+    return useCases.getEventIsFavorite(dashboard, eventCollection.key, event.key)
+  } 
 
   return (
     <Paper className='paperEventCollection' style={{flexGrow: collapsed ? 0 : 1, minWidth: collapsed ? '2em' : '8em'}} >
@@ -133,7 +145,7 @@ function EventCollectionComponent({dashboard, eventCollection, edit, setEventCol
             <h1 style={{marginLeft: '1em', marginTop: 0}}>{eventCollection.title}</h1>
 
             <div>
-              {eventCollection.getEvents(true).map(event => (
+              {eventCollection.getEvents(true).filter(eventFilter).map(event => (
                 <EventComponent key={event.key}  dashboard={dashboard} eventCollection={eventCollection.key} event={event} setEvent={setEvent} deleteEvent={deleteEvent} edit={edit}/>
               ))}
             </div>
@@ -185,6 +197,7 @@ export function ViewEventCollections() {
   const [importErrorMessage, setImportErrorMessage] = useState('');
   const [editTokenInput, setEditTokenInput] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [filterFavorites, setFilterFavorites] = useState(false);
 
   useEffect(() => {
     if(dashboard === undefined) {
@@ -298,9 +311,23 @@ export function ViewEventCollections() {
 
   return (
     <div>
+
+      {!edit && (
+        <div style={{width: "100%"}}>
+          <div style={{display: "flex", flexDirection: "row", justifyContent: "flex-end", paddingTop: "1em", paddingRight: "1em"}}>
+            <div>
+              <Button variant={filterFavorites ? "contained" : "outlined"} onClick={()=> setFilterFavorites(v => !v)} 
+                      endIcon={filterFavorites ? <FavoriteIcon style={{color: "red"}}/>: <FavoriteBorderIcon />}>
+                Show favorites only
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
         {eventCollections.filter(c => (edit || (c.getEvents(edit).length > 0))).map(collection => (
-          <EventCollectionComponent key={collection.key} dashboard={dashboard} eventCollection={collection} setEventCollection={setEventCollection} edit={edit}/>
+          <EventCollectionComponent key={collection.key} dashboard={dashboard} eventCollection={collection} setEventCollection={setEventCollection} edit={edit} filterFavorites={filterFavorites}/>
         ))}
 
         {edit && (
