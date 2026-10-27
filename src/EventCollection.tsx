@@ -109,7 +109,7 @@ function EventCollectionComponent({dashboard, eventCollection, edit, filterFavor
   } 
 
   return (
-    <Paper className='paperEventCollection' style={{flexGrow: collapsed ? 0 : 1, minWidth: collapsed ? '2em' : '8em'}} >
+    <Paper className='paperEventCollection' style={{flexGrow: collapsed ? 0 : 1, minWidth: collapsed ? '2em' : '8em', maxWidth: '30em'}} >
       <div style={{display: 'flex', flexDirection: 'column'}}>
         <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
 

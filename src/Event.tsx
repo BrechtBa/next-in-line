@@ -62,7 +62,7 @@ const formatDateTime = (date: Date | null) => {
   return (
     <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
       <div style={{marginRight: '0.3em'}}>{date.toLocaleDateString("nl-BE")}</div>
-      <div style={{marginRight: '0.3em'}}>{date.toLocaleTimeString("nl-BE")}</div>
+      <div style={{marginRight: '0.3em'}}>{date.toLocaleTimeString("nl-BE", {hour: '2-digit', minute:'2-digit'})}</div>
     </div>
   );
 }
@@ -166,45 +166,44 @@ export function EventComponent({dashboard, eventCollection, event, edit, setEven
 
   return (
     <Paper className='paperEvent' style={{backgroundColor: getBackgroundColor(event)}}>
-      <div style={{display: 'flex', flexDirection: 'column'}}>
-        {edit && (
-          <div style={{display: 'flex', justifyContent: 'flex-end'}}>
-            <IconButton aria-label="Example" onClick={()=>setEditDialogOpen(true)}>
-              <CreateIcon />
-            </IconButton>
-            <IconButton aria-label="Example" onClick={()=>setDeleteDialogOpen(true)}>
-              <DeleteIcon />
-            </IconButton>
-          </div>
-        )}
+      <div style={{display: 'flex', flexDirection: 'row', gap: "1em"}}>
 
-        {!edit && (
-          <div style={{display: 'flex', justifyContent: 'flex-end'}}>
-            <IconButton aria-label="Favorite" onClick={handleFavorite}>
-              {isFavorite ? <FavoriteIcon sx={{ color: "red" }}/> :  <FavoriteBorderIcon />}
-            </IconButton>
-          </div>
-        )}
 
-        <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
-          <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
+        <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between'}}>
+          <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
             <h1 style={{marginTop: 0}}>{event.title}</h1>
+              {!edit && (
+          
+              <IconButton aria-label="Favorite" onClick={handleFavorite}>
+                {isFavorite ? <FavoriteIcon sx={{ color: "red" }}/> :  <FavoriteBorderIcon />}
+              </IconButton>
+            )}
+          </div>
+          
+          <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
+            <div style={{flexGrow: 1}}>{formatDateTime(event.getStartDate())}</div>
+            <div><EventDuration event={event}/></div>
+          </div>
+        </div>
 
-            <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
-              <div style={{flexGrow: 1}}>{formatDateTime(event.getStartDate())}</div>
-              <div><EventDuration event={event}/></div>
+        {edit && (
+          <div style={{display: 'flex', flexDirection: "column", justifyContent: 'space-between'}}>
+            <div>
+              <IconButton aria-label="Example" onClick={()=>setEditDialogOpen(true)}>
+                <CreateIcon />
+              </IconButton>
+              <IconButton aria-label="Example" onClick={()=>setDeleteDialogOpen(true)}>
+                <DeleteIcon />
+              </IconButton>
+            </div>
+
+            <div>
+              {(!event.started || event.finished) && <Button onClick={() => setEvent(event.start())}>Start</Button>}
+              {(event.started && !event.finished) && <Button onClick={() => setEvent(event.finish())}>Finish</Button>}
             </div>
           </div>
+        )}
 
-          { edit && (
-            <div style={{alignSelf: 'flex-end'}}>
-              <div>
-                {(!event.started || event.finished) && <Button onClick={() => setEvent(event.start())}>Start</Button>}
-                {(event.started && !event.finished) && <Button onClick={() => setEvent(event.finish())}>Finish</Button>}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       <EditEventDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={eventData => setEvent(event.update(eventData))} event={event} />
