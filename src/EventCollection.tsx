@@ -105,7 +105,7 @@ function EventCollectionComponent({dashboard, eventCollection, edit, filterFavor
     if(!filterFavorites) {
       return true;
     }
-    return useCases.getEventIsFavorite(dashboard, eventCollection.key, event.key)
+    return event.isFavorite;
   } 
 
   return (

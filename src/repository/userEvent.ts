@@ -1,5 +1,4 @@
-import type { UserEventData } from "../Domain";
-import type { UserEventRepository } from "./interface";
+import type { RepositoryUserEventData, UserEventRepository } from "./interface";
 
 
 
@@ -7,7 +6,7 @@ class LocalStorageUserEventRepository implements UserEventRepository {
   setUserData(dashboard: string, eventCollection: string, event: string, isFavorite: boolean): void {
     localStorage.setItem(this.getKey(dashboard, eventCollection, event), JSON.stringify({isFavorite: isFavorite}));
   }
-  getUserData(dashboard: string, eventCollection: string, event: string): UserEventData {
+  getUserData(dashboard: string, eventCollection: string, event: string): RepositoryUserEventData {
     const val = localStorage.getItem(this.getKey(dashboard, eventCollection, event));
     if( val === null) {
       return {
@@ -17,7 +16,7 @@ class LocalStorageUserEventRepository implements UserEventRepository {
         isFavorite: false
       }
     }
-    return JSON.parse(val) as UserEventData;
+    return JSON.parse(val) as RepositoryUserEventData;
   }
 
   private getKey(dashboard: string, eventCollection: string, event: string): string {

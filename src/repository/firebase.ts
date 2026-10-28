@@ -2,8 +2,8 @@ import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, set, push, get, runTransaction, Database} from "firebase/database";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, type Auth } from "firebase/auth";
 
-import {EventCollection, Event, type EventData} from '../Domain.js'
-import type { EventRepository } from "./interface.js";
+import {EventCollection, type EventData} from '../Domain.js'
+import type { EventRepository, RepositoryEventCollectionData } from "./interface.js";
 
 
 type EventDTO = {
@@ -58,8 +58,9 @@ export class FirebaseEventRepository implements EventRepository{
     });
   }
 
-  onEventCollectionsChanged(dashboard: string, successCallback: (collections: Array<EventCollection>) => void, errorCallback: () => void): void {
+  onEventCollectionsChanged(dashboard: string, successCallback: (collections: Array<RepositoryEventCollectionData>) => void, errorCallback: () => void): () => void {
     // check if the dashboard exists, we cannot depend on the collections query here as a dashboard can have no collections
+    let unsubscribe = () => {};
     get(ref(this.db, `dashboardData/${dashboard}/exists`)).then((snapshot) => {
       if (snapshot !== undefined){
         if(snapshot.val() === null){
@@ -67,14 +68,15 @@ export class FirebaseEventRepository implements EventRepository{
           return
         }
 
-        return onValue(ref(this.db, `dashboardData/${dashboard}/collections`), snapshot => {
+        unsubscribe = onValue(ref(this.db, `dashboardData/${dashboard}/collections`), snapshot => {
           if (snapshot !== undefined){
 
             const data = snapshot.val() || {} as {[key: string]: {title: string, events: {[key: string]: EventDTO}, order: number}};
 
             const collections = Object.keys(data).map(collectionKey => {
               const events = Object.keys(data[collectionKey].events || {}).map(eventKey => {
-                return new Event(eventKey, {
+                return {
+                  key: eventKey,
                   title: data[collectionKey].events[eventKey].title,
                   plannedStartDate: data[collectionKey].events[eventKey].plannedStartDate === undefined ? new Date() : new Date(data[collectionKey].events[eventKey].plannedStartDate),
                   plannedFinishDate: data[collectionKey].events[eventKey].plannedFinishDate === undefined ? null : new Date(data[collectionKey].events[eventKey].plannedFinishDate),
@@ -82,9 +84,9 @@ export class FirebaseEventRepository implements EventRepository{
                   finishDate: data[collectionKey].events[eventKey].finishDate === undefined ? null : new Date(data[collectionKey].events[eventKey].finishDate),
                   started: data[collectionKey].events[eventKey].started,
                   finished: data[collectionKey].events[eventKey].finished
-                })
+                }
               });
-              return new EventCollection({key: collectionKey, title: data[collectionKey].title, events: events, order: data[collectionKey].order})
+              return {key: collectionKey, title: data[collectionKey].title, events: events, order: data[collectionKey].order}
             });
             collections.sort((a, b) => a.order-b.order);
             successCallback(collections);
@@ -98,6 +100,8 @@ export class FirebaseEventRepository implements EventRepository{
       }
     });
 
+    // FIXME this returns immediately and never really unsubscribes
+    return unsubscribe;
   }
 
   setEventCollection(dashboard: string, collection: EventCollection) {

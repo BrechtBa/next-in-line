@@ -6,6 +6,7 @@ export type EventData = {
   finishDate: Date | null;
   started: boolean;
   finished: boolean;
+  isFavorite: boolean;
 }
 
 
@@ -18,7 +19,8 @@ export class Event {
   finishDate: Date | null;
   started: boolean;
   finished: boolean;
-
+  isFavorite: boolean;
+  
   constructor(key: string, args: EventData) {
     this.key = key;
     this.title = args.title;
@@ -28,23 +30,24 @@ export class Event {
     this.finishDate = args.finishDate || null
     this.started = args.started || false;
     this.finished = args.finished || false;
+    this.isFavorite = args.isFavorite || false;
   }
 
   start() {
     return new Event(this.key, {
       title: this.title, plannedStartDate: this.plannedStartDate, plannedFinishDate: this.plannedFinishDate,
-      startDate: new Date(), finishDate: this.finishDate, started: true, finished: false
+      startDate: new Date(), finishDate: this.finishDate, started: true, finished: false, isFavorite: this.isFavorite,
     });
   }
 
   finish() {
     return new Event(this.key, {
       title: this.title, plannedStartDate: this.plannedStartDate, plannedFinishDate: this.plannedFinishDate,
-      startDate: this.startDate, finishDate: new Date(), started: true, finished: true
+      startDate: this.startDate, finishDate: new Date(), started: true, finished: true, isFavorite: this.isFavorite,
     });
   }
 
-  update(eventData: EventData) {
+  update(eventData: Partial<EventData>) {
     if (eventData.started && (eventData.startDate === undefined || eventData.startDate === null) && this.startDate === null ){
       eventData.startDate = new Date();
     }
@@ -57,7 +60,8 @@ export class Event {
         startDate: this.startDate,
         finishDate: this.finishDate,
         started: this.started,
-        finished: this.finished
+        finished: this.finished,
+        isFavorite: this.isFavorite,
       },
       ...eventData
     });
@@ -91,7 +95,8 @@ export class Event {
       startDate: obj.startDate === null ? null : new Date(obj.startDate),
       finishDate: obj.finishDate === null ? null : new Date(obj.finishDate),
       started: obj.started,
-      finished: obj.finished
+      finished: obj.finished,
+      isFavorite: obj.isFavorite,
     })
   }
 }
@@ -102,6 +107,12 @@ export type EventCollectionData = {
   title: string;
   events: Array<Event>;
   order: number;
+}
+
+
+export type EventDTO = {
+  event: Event;
+  expectedDelayMs: number;
 }
 
 
@@ -118,12 +129,6 @@ export class EventCollection {
     this.order = args.order;
   }
 
-  addEvent(event: Event): EventCollection {
-    let events = [...this.events];
-    events.push(event)
-    return new EventCollection({key: this.key, title: this.title, events: events, order: this.order});
-  }
-
   update(collectionData: {title?: string, order?: number}) {
     return new EventCollection({
       key: this.key,
@@ -133,11 +138,11 @@ export class EventCollection {
     });
   }
 
-  getEvents(finished: boolean) {
-    return this.events.filter(e => finished || !e.finished ).sort(this.eventSorting);
+  getEvents(finished: boolean): Array<Event> {
+    return this.events.filter(e => finished || !e.finished).sort(this.eventSorting);
   }
 
-  eventSorting(a: Event, b: Event) {
+  private eventSorting(a: Event, b: Event) {
     if(a.plannedStartDate < b.plannedStartDate) {
       return -1;
     }
@@ -153,12 +158,4 @@ export class EventCollection {
     })
 
   }
-}
-
-
-export interface UserEventData {
-  dashboard: string;
-  eventCollection: string;
-  event: string;
-  isFavorite: boolean;
 }

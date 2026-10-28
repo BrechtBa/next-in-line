@@ -1,7 +1,7 @@
 import { Event, EventCollection, type EventCollectionData, type EventData } from "./Domain";
 import { getRepository } from "./repository/firebase";
 import { getRepository as getUserDataRepository } from "./repository/userEvent";
-import type { EventRepository, UserEventRepository } from "./repository/interface";
+import type { EventRepository, RepositoryEventCollectionData, UserEventRepository } from "./repository/interface";
 
 
 function generateString(length: number) {
@@ -43,9 +43,15 @@ class UseCases {
   repository: EventRepository;
   userDataRepository: UserEventRepository;
 
+  onEventCollectionChangedUnsubscribers: {[key: string]: {callback: (c: Array<EventCollection>) => void, unsubscribe: () => void}};
+  repositoryCollectionData: Array<RepositoryEventCollectionData>;
+
   constructor(repository: EventRepository, userDataRepository: UserEventRepository){
     this.repository = repository;
     this.userDataRepository = userDataRepository;
+
+    this.onEventCollectionChangedUnsubscribers = {};
+    this.repositoryCollectionData = [];
   }
 
   addDashboard(callback: (dashboard: string, editToken: string) => void, errorCallback: (error: string) => void) {
@@ -142,17 +148,54 @@ class UseCases {
     this.repository.overwriteEventCollections(dashboard, collections);
   }
 
-  onEventCollectionsChanged(dashboard: string, successCallback: (collections: Array<EventCollection>) => void, errorCallback: () => void): void {
-    this.repository.onEventCollectionsChanged(dashboard, successCallback, errorCallback);
+  onEventCollectionsChanged(dashboard: string, successCallback: (collections: Array<EventCollection>) => void, errorCallback: () => void): () => void {
+    const callbackKey = generateString(16)
+
+    const unsubscribe = this.repository.onEventCollectionsChanged(dashboard, (repositoryCollectionData: Array<RepositoryEventCollectionData>) => {
+      
+      this.repositoryCollectionData = repositoryCollectionData;
+      successCallback(this.getCollectionsFromRepositoryData(dashboard, repositoryCollectionData))
+
+    }, errorCallback);
+
+    this.onEventCollectionChangedUnsubscribers[callbackKey] = {
+      callback: successCallback,
+      unsubscribe: () => {
+        unsubscribe();
+        delete this.onEventCollectionChangedUnsubscribers[callbackKey] ;
+      }
+    }
+
+    return this.onEventCollectionChangedUnsubscribers[callbackKey].unsubscribe;
   }
 
-  getEventIsFavorite(dashboard: string, eventCollection: string, event: string): boolean {
-    return this.userDataRepository.getUserData(dashboard, eventCollection, event).isFavorite;
+  setEventIsFavorite(dashboard: string, eventCollection: string, event: Event, isFavorite: boolean): void {
+    this.userDataRepository.setUserData(dashboard, eventCollection, event.key, isFavorite);
+
+    // notify all subscribers
+    Object.keys(this.onEventCollectionChangedUnsubscribers).forEach(key => {
+      this.onEventCollectionChangedUnsubscribers[key].callback(this.getCollectionsFromRepositoryData(dashboard, this.repositoryCollectionData));
+    });
   }
 
-  setEventIsFavorite(dashboard: string, eventCollection: string, event: string, isFavorite: boolean): void {
-    this.userDataRepository.setUserData(dashboard, eventCollection, event, isFavorite);
+  private getCollectionsFromRepositoryData(dashboard: string, repositoryCollectionData: Array<RepositoryEventCollectionData>): Array<EventCollection> {
+    return repositoryCollectionData.map(collectionData => new EventCollection({
+        key: collectionData.key,
+        title: collectionData.title,
+        events: collectionData.events.map(eventData => new Event(eventData.key, {
+          title: eventData.title,
+          plannedStartDate: eventData.plannedStartDate,
+          plannedFinishDate: eventData.plannedFinishDate,
+          startDate: eventData.startDate,
+          finishDate: eventData.finishDate,
+          started: eventData.started,
+          finished: eventData.finished,
+          isFavorite: this.userDataRepository.getUserData(dashboard, collectionData.key, eventData.key).isFavorite
+        })),
+        order: collectionData.order,
+      }));
   }
+
 
 };
 

@@ -76,7 +76,8 @@ export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, 
     startDate: null,
     finishDate: null,
     started: false,
-    finished: false
+    finished: false,
+    isFavorite: false,
   })
 
   useEffect(() => {
@@ -88,7 +89,8 @@ export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, 
         startDate: null,
         finishDate: null,
         started: false,
-        finished: false
+        finished: false,
+        isFavorite: false,
       })
     }
     else {
@@ -99,7 +101,8 @@ export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, 
         startDate: event.startDate,
         finishDate: event.finishDate,
         started: event.started,
-        finished: event.finished
+        finished: event.finished,
+        isFavorite: event.isFavorite,
       })
     }
   }, [event]);
@@ -138,7 +141,7 @@ export function EventComponent({dashboard, eventCollection, event, edit, setEven
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isFavorite, setEventIsFavorite] = useState(useCases.getEventIsFavorite(dashboard, eventCollection, event.key));
+  // const [isFavorite, setEventIsFavorite] = useState(useCases.getEventIsFavorite(dashboard, eventCollection, event.key));
 
 
   const handleDelete = () => {
@@ -147,8 +150,8 @@ export function EventComponent({dashboard, eventCollection, event, edit, setEven
     //useCases.deleteEvent(dashboard, eventCollection, event.key);
   }
   const handleFavorite = ()  => {
-    useCases.setEventIsFavorite(dashboard, eventCollection, event.key, !isFavorite)
-    setEventIsFavorite(!isFavorite)
+    useCases.setEventIsFavorite(dashboard, eventCollection, event, !event.isFavorite)
+    // setEventIsFavorite(!isFavorite)
   }
 
   const getBackgroundColor = (event: Event) => {
@@ -175,7 +178,7 @@ export function EventComponent({dashboard, eventCollection, event, edit, setEven
               {!edit && (
           
               <IconButton aria-label="Favorite" onClick={handleFavorite}>
-                {isFavorite ? <FavoriteIcon sx={{ color: "red" }}/> :  <FavoriteBorderIcon />}
+                {event.isFavorite ? <FavoriteIcon sx={{ color: "red" }}/> :  <FavoriteBorderIcon />}
               </IconButton>
             )}
           </div>
