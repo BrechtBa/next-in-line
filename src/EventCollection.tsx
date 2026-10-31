@@ -103,9 +103,9 @@ function EventCollectionComponent({dashboard, eventCollection, edit, filterFavor
       return true;
     }
     if(!filterFavorites) {
-      return true;
+      return !event.finished;
     }
-    return event.isFavorite;
+    return event.isFavorite && !event.finished;
   } 
 
   return (
@@ -343,9 +343,9 @@ export function ViewEventCollections() {
       </div>
 
 
-      <div style={{display: 'flex',  flexDirection: 'row'}}>
+      <div style={{display: 'flex',  flexDirection: 'row', gap: "1em", justifyContent: "space-around", flexWrap: "wrap"}}>
         { edit && (
-          <div style={{display: 'flex', margin: '2em'}}>
+          <div style={{display: 'flex'}}>
             <Button onClick={() => setDetailsDialogOpen(true)} variant="outlined">Show dashboard details</Button>
 
             <Dialog open={detailsDialogOpen} onClose={() => setDetailsDialogOpen(false)}>
@@ -385,28 +385,11 @@ export function ViewEventCollections() {
 
           </div>
         )}
-        { edit && (
-          <div style={{display: 'flex', margin: '2em'}}>
-            <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)}>
-              <div style={{margin: '1em'}}>
-                <h1>Importing will delete all data</h1>
-                <div style={{color: "#f00"}}>{importErrorMessage}</div>
-                <FileDrop onDrop={(files) => onFileInputChange(files)} onTargetClick={() => fileInputRef.current !== null && fileInputRef.current.click()}>
-                  <div style={{width: "20em", height: "10em", backgroundColor: '#f0f0f0', border: "1px dashed #aaa", display: "flex", justifyContent: "center", alignItems: "center"}}>
-                    Drop a .json file here.
-                  </div>
-                </FileDrop>
-                <input onChange={(e) => onFileInputChange(e.target.files)} ref={fileInputRef} type="file" style={{display: "none"}}/>
-                <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
-                  <Button onClick={() => setImportDialogOpen(false)}>close</Button>
-                </div>
-              </div>
-            </Dialog>
-          </div>
-        )}
+
+
 
         { !edit && (
-          <div style={{display: 'flex', margin: '2em'}}>
+          <div style={{display: 'flex'}}>
             <Button onClick={() => setEditDialogOpen(true)} variant="outlined">Edit dashboard</Button>
 
             <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
@@ -425,26 +408,48 @@ export function ViewEventCollections() {
         )}
 
         { edit && (
-          <div style={{display: 'flex', margin: '2em'}}>
+          <div style={{display: 'flex'}}>
             <Link to={`/${dashboard}`} target="_blank" rel="noopener noreferrer"><Button variant="outlined">View dashboard</Button></Link>
           </div>
         )}
 
         { edit && (
-          <div style={{display: 'flex', margin: '2em'}}>
+          <div style={{display: 'flex'}}>
             <Button onClick={() => exportCollections()} variant="outlined">Export</Button>
           </div>
         )}
 
         { edit && (
-          <div style={{display: 'flex', margin: '2em'}}>
+          <div style={{display: 'flex'}}>
             <Button onClick={() => {setImportErrorMessage(""); setImportDialogOpen(true)}} variant="outlined">Import</Button>
           </div>
         )}
 
-        <div style={{display: 'flex', margin: '2em'}}>
+        <div style={{display: 'flex'}}>
           <Link to="/"><Button variant="outlined">Home</Button></Link>
         </div>
+
+      </div>
+
+        { edit && (
+          <div style={{display: 'flex'}}>
+            <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)}>
+              <div style={{margin: '1em'}}>
+                <h1>Importing will delete all data</h1>
+                <div style={{color: "#f00"}}>{importErrorMessage}</div>
+                <FileDrop onDrop={(files) => onFileInputChange(files)} onTargetClick={() => fileInputRef.current !== null && fileInputRef.current.click()}>
+                  <div style={{width: "20em", height: "10em", backgroundColor: '#f0f0f0', border: "1px dashed #aaa", display: "flex", justifyContent: "center", alignItems: "center"}}>
+                    Drop a .json file here.
+                  </div>
+                </FileDrop>
+                <input onChange={(e) => onFileInputChange(e.target.files)} ref={fileInputRef} type="file" style={{display: "none"}}/>
+                <div style={{marginTop: '1em', display: 'flex', justifyContent: 'flex-end'}}>
+                  <Button onClick={() => setImportDialogOpen(false)}>close</Button>
+                </div>
+              </div>
+            </Dialog>
+          </div>
+        )}
 
         <Snackbar
           open={snackbarOpen}
@@ -452,8 +457,6 @@ export function ViewEventCollections() {
           onClose={() => setSnackbarOpen(false)}
           message="Link copied to clipboard"
         />
-
-      </div>
 
     </div>
   );

@@ -67,7 +67,7 @@ export class Event {
     });
   }
 
-  getDuration(): number {
+  getDurationMs(): number {
     if(this.finished && this.finishDate !== null && this.startDate !== null){
       return this.finishDate.getTime() - this.startDate.getTime();
     }
@@ -110,9 +110,51 @@ export type EventCollectionData = {
 }
 
 
+export class EventInCollection extends Event {
+  expectedDelayOffsetDate: Date | null;
+  expectedDelayMs: number | null;
+  eventsToGo: number;
+
+  constructor(key: string, args: EventData, expectedDelayOffsetDate: Date | null, expectedDelayMs: number | null, eventsToGo: number){
+    super(key, args);
+    this.expectedDelayOffsetDate = expectedDelayOffsetDate;
+    this.expectedDelayMs = expectedDelayMs
+    this.eventsToGo = eventsToGo;
+  }
+
+  /*
+  expectedDelay:
+    if there are no started events in the collection
+      return 0
+    
+    get all not started events before this one.
+      if now > event[0].plannedStartDate:
+        return now - event[0].plannedStartDate - 0.05 * full_events_duration
+      return 0 
+
+
+  delay = now - event[0].plannedStartDate - 0.05 * full_events_duration
+  */
+
+  getDelayMs(): number {
+    if(this.expectedDelayMs !== null) {
+      return this.expectedDelayMs;
+    }
+    if(this.expectedDelayOffsetDate === undefined || this.expectedDelayOffsetDate === null) {
+      return 0;
+    }
+    const now = this.started ? this.startDate : new Date();
+    const seconds =  now.getTime() - this.expectedDelayOffsetDate.getTime();
+    return seconds > 0 ? seconds : 0;
+  }
+
+}
+
+
 export type EventDTO = {
   event: Event;
   expectedDelayMs: number;
+  eventsToGo: number;
 }
 
 
@@ -138,8 +180,28 @@ export class EventCollection {
     });
   }
 
-  getEvents(finished: boolean): Array<Event> {
-    return this.events.filter(e => finished || !e.finished).sort(this.eventSorting);
+  getEvents(finished: boolean): Array<EventInCollection> {
+    const sortedEvents = this.events.sort(this.eventSorting);
+
+    const now = new Date().getTime();
+
+    const calculateOffsetDate = (e: Event): number => {
+      return e.plannedStartDate.getTime() - now
+    }
+    const offsetDateEvent = sortedEvents.filter(e => !e.finished).reduce(
+      (acc, e) => calculateOffsetDate(e) < acc.delta ? {event: e, date: calculateOffsetDate(e)} : acc, {event: null, delta: 1e9}
+    );
+
+    const calculateDelay = (e: Event): number => {
+      return e.startDate.getTime() - e.plannedStartDate.getTime()
+    }
+    const delayMsEvent = sortedEvents.filter(e => !e.finished && e.started).reduce(
+      (acc, e) => calculateDelay(e) > acc.delay ? {event: e, delay: calculateDelay(e)} : acc, {event: null, delay: null}
+    );
+    const pendingEvents = sortedEvents.reduce(
+      (acc, e) => ({...acc, [e.key]: acc.pending, pending: acc.pending + (e.finished ? 0 : 1)}), {pending: 0}
+    );
+    return sortedEvents.filter(e => finished || !e.finished).map(e => new EventInCollection(e.key, e, offsetDateEvent.event?.plannedStartDate, delayMsEvent.delay, pendingEvents[e.key] || 0));
   }
 
   private eventSorting(a: Event, b: Event) {

@@ -16,41 +16,22 @@ import './style.css';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import type { Event, EventData } from './Domain';
+import type { Event, EventData, EventInCollection } from './Domain';
 import { useCases } from './UseCases';
 
 
-function EventDuration({event}: {event: Event}){
-  const [duration, setDuration] = useState(0);
+const formatDuration = (duration: number) => {
+  const hours = Math.floor(duration/1000/3600)
+  const minutes = Math.floor((duration/1000 - hours*3600)/60)
+  const seconds = Math.floor((duration/1000 - hours*3600 - minutes*60))
 
-  useEffect(() => {
-    if(event.started && ! event.finished){
-      const interval = setInterval(() => setDuration(event.getDuration()), 1000);
-      return () => clearInterval(interval);
-    }
-    if(event.finished){
-      setDuration(event.getDuration());
-    }
-  }, [event]);
-
-  const formatDuration = (duration: number) => {
-    const hours = Math.floor(duration/1000/3600)
-    const minutes = Math.floor((duration/1000 - hours*3600)/60)
-    const seconds = Math.floor((duration/1000 - hours*3600 - minutes*60))
-
-    const minutesSeconds = `${(minutes < 10) ? '0' + minutes : minutes}:${(seconds < 10) ? '0' + seconds : seconds}`;
-    if(hours > 0){
-      return hours + ':' + minutesSeconds;
-    }
-    return minutesSeconds;
+  const minutesSeconds = `${(minutes < 10) ? '0' + minutes : minutes}:${(seconds < 10) ? '0' + seconds : seconds}`;
+  if(hours > 0){
+    return hours + ':' + minutesSeconds;
   }
-
-  return (
-    <div>
-      {(event.started) && (<div>{formatDuration(duration)}</div>)}
-    </div>
-  )
+  return minutesSeconds;
 }
+
 
 const formatDateTime = (date: Date | null) => {
   if(date === null){
@@ -66,6 +47,58 @@ const formatDateTime = (date: Date | null) => {
     </div>
   );
 }
+
+
+function EventDuration({event}: {event: Event}){
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    if(event.started && ! event.finished){
+      const interval = setInterval(() => setDuration(event.getDurationMs()), 1000);
+      return () => clearInterval(interval);
+    }
+    if(event.finished){
+      setDuration(event.getDurationMs());
+    }
+  }, [event]);
+
+  return (
+    <div>
+      {(event.started) && (<div>{formatDuration(duration)}</div>)}
+    </div>
+  )
+}
+
+
+function EventDelay({event}: {event: EventInCollection}){
+  const [duration, setDuration] = useState(0);
+
+
+  useEffect(() => {
+    const interval = setInterval(() => setDuration(
+      event.getDelayMs()
+    ), 1000);
+    return () => clearInterval(interval);
+  }, [event]);
+
+  return (
+    <div>
+      {(duration > 0) && (<div style={{color: "#b12626", fontWeight: 600}}>{event.started ? "delayed" : "expected delay"}: {formatDuration(duration)}</div>)}
+    </div>
+  )
+}
+
+
+function EventsToGo({event}: {event: EventInCollection}){
+  return (
+    <div>
+      {(event.eventsToGo === 0 && !event.started) && (<div>Next up</div>)}
+      {(event.eventsToGo > 0) && (<div>{event.eventsToGo} to go</div>)}
+    </div>
+  )
+}
+
+
 
 export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, setOpen: (open: boolean) => void, onSave: (eventData: EventData) => void, event: Event | null}) {
 
@@ -137,7 +170,7 @@ export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, 
 }
 
 
-export function EventComponent({dashboard, eventCollection, event, edit, setEvent, deleteEvent}: {dashboard: string, eventCollection: string, event: Event, edit: boolean, setEvent: (event: Event) => void, deleteEvent: (key: string) => void}) {
+export function EventComponent({dashboard, eventCollection, event, edit, setEvent, deleteEvent}: {dashboard: string, eventCollection: string, event: EventInCollection, edit: boolean, setEvent: (event: Event) => void, deleteEvent: (key: string) => void}) {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -175,16 +208,19 @@ export function EventComponent({dashboard, eventCollection, event, edit, setEven
         <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between'}}>
           <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
             <h1 style={{marginTop: 0}}>{event.title}</h1>
+            {!edit && (
+              <EventsToGo event={event}/>
+            )}
               {!edit && (
-          
               <IconButton aria-label="Favorite" onClick={handleFavorite}>
                 {event.isFavorite ? <FavoriteIcon sx={{ color: "red" }}/> :  <FavoriteBorderIcon />}
               </IconButton>
             )}
           </div>
           
-          <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
-            <div style={{flexGrow: 1}}>{formatDateTime(event.getStartDate())}</div>
+          <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: "1em"}}>
+            <div style={{flexGrow: 0}}>{formatDateTime(event.getStartDate())}</div>
+            <div style={{flexGrow: 1}}><EventDelay event={event}/></div>
             <div><EventDuration event={event}/></div>
           </div>
         </div>
