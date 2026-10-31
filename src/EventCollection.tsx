@@ -94,6 +94,7 @@ function EventCollectionComponent({dashboard, eventCollection, edit, filterFavor
     setDeleteDialogOpen(false);
     useCases.deleteEventCollection(dashboard, eventCollection.key);
   }
+  
   const duplicateCollection = () => {
     useCases.duplicateEventCollection(dashboard, eventCollection.key);
   }
@@ -166,7 +167,7 @@ function EventCollectionComponent({dashboard, eventCollection, edit, filterFavor
 
       </div>
 
-      <EditEventDialog open={addEventDialogOpen} setOpen={setAddEventDialogOpen} onSave={eventData => addEvent(eventData)} event={null} />
+      <EditEventDialog open={addEventDialogOpen} setOpen={setAddEventDialogOpen} onSave={eventData => addEvent(eventData)} event={useCases.getNewEventData(eventCollection)}/>
       <EditCollectionDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={(collectionData: {title?: string, order?: number}) => setEventCollection(eventCollection.update(collectionData))} collection={eventCollection}/>
 
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>

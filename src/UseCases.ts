@@ -100,6 +100,33 @@ class UseCases {
     this.repository.deleteEvent(dashboard, eventCollection, key);
   }
 
+
+  getNewEventData(eventCollection: EventCollection): EventData {
+   
+    let plannedStartDate = new Date();
+    if(eventCollection.events.length > 0) {
+
+      const sortedEvents = eventCollection.events.sort((a, b) => a.plannedStartDate > b.plannedStartDate ? 1 : -1)
+      const differences = sortedEvents.map(
+        (_, i) => i === 0 ? 10*60000 : sortedEvents[i].plannedStartDate.getTime() - sortedEvents[i-1].plannedStartDate.getTime()
+      ).sort();
+      const differenceMs = differences[Math.floor(0.5 * differences.length)]
+
+      plannedStartDate = new Date(sortedEvents[sortedEvents.length-1].plannedStartDate.getTime() + differenceMs);
+    }
+
+    return {
+      title: 'New Event',
+      plannedStartDate: plannedStartDate,
+      plannedFinishDate: null,
+      startDate: null,
+      finishDate: null,
+      started: false,
+      finished: false,
+      isFavorite: false,
+    }
+  }
+
   addEvent(dashboard: string, eventCollection: string, eventData: EventData): void {
     this.repository.addEvent(dashboard, eventCollection, eventData);
   }

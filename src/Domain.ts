@@ -143,7 +143,7 @@ export class EventInCollection extends Event {
     if(this.expectedDelayOffsetDate === undefined || this.expectedDelayOffsetDate === null) {
       return 0;
     }
-    const now = this.started ? this.startDate : new Date();
+    const now = this.startDate !== null ? this.startDate : new Date();
     const seconds =  now.getTime() - this.expectedDelayOffsetDate.getTime();
     return seconds > 0 ? seconds : 0;
   }
@@ -188,20 +188,21 @@ export class EventCollection {
     const calculateOffsetDate = (e: Event): number => {
       return e.plannedStartDate.getTime() - now
     }
-    const offsetDateEvent = sortedEvents.filter(e => !e.finished).reduce(
-      (acc, e) => calculateOffsetDate(e) < acc.delta ? {event: e, date: calculateOffsetDate(e)} : acc, {event: null, delta: 1e9}
+    const offsetDateEvent: {event: Event | null, delta: number} = sortedEvents.filter(e => !e.finished).reduce(
+      (acc: {event: Event | null, delta: number}, e: Event) => calculateOffsetDate(e) < acc.delta ? {event: e, delta: calculateOffsetDate(e)} : acc, {event: null, delta: 1e9}
     );
 
     const calculateDelay = (e: Event): number => {
-      return e.startDate.getTime() - e.plannedStartDate.getTime()
+      return e.startDate === null ? 0 : e.startDate.getTime() - e.plannedStartDate.getTime()
     }
-    const delayMsEvent = sortedEvents.filter(e => !e.finished && e.started).reduce(
-      (acc, e) => calculateDelay(e) > acc.delay ? {event: e, delay: calculateDelay(e)} : acc, {event: null, delay: null}
+
+    const delayMsEvent: {event: Event | null, delay: number | null} = sortedEvents.filter(e => !e.finished && e.started).reduce(
+      (acc: {event: Event | null, delay: number | null}, e: Event) => (acc.delay === null || calculateDelay(e) > acc.delay) ? {event: e, delay: calculateDelay(e)} : acc, {event: null, delay: null}
     );
-    const pendingEvents = sortedEvents.reduce(
+    const pendingEvents: {[key: string]: number, pending: number} = sortedEvents.reduce(
       (acc, e) => ({...acc, [e.key]: acc.pending, pending: acc.pending + (e.finished ? 0 : 1)}), {pending: 0}
     );
-    return sortedEvents.filter(e => finished || !e.finished).map(e => new EventInCollection(e.key, e, offsetDateEvent.event?.plannedStartDate, delayMsEvent.delay, pendingEvents[e.key] || 0));
+    return sortedEvents.filter(e => finished || !e.finished).map(e => new EventInCollection(e.key, e, offsetDateEvent.event===null ? null : offsetDateEvent.event.plannedStartDate, delayMsEvent.delay, pendingEvents[e.key] || 0));
   }
 
   private eventSorting(a: Event, b: Event) {

@@ -100,8 +100,7 @@ function EventsToGo({event}: {event: EventInCollection}){
 
 
 
-export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, setOpen: (open: boolean) => void, onSave: (eventData: EventData) => void, event: Event | null}) {
-
+export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, setOpen: (open: boolean) => void, onSave: (eventData: EventData) => void, event: EventData | null}) {
   const [eventData, setEventData] = useState<EventData>({
     title: 'New Event',
     plannedStartDate: new Date(),
@@ -114,19 +113,7 @@ export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, 
   })
 
   useEffect(() => {
-    if(event === null) {
-      setEventData({
-        title: 'New Event',
-        plannedStartDate: new Date(),
-        plannedFinishDate: null,
-        startDate: null,
-        finishDate: null,
-        started: false,
-        finished: false,
-        isFavorite: false,
-      })
-    }
-    else {
+    if(event !== null) {
       setEventData({
         title: event.title,
         plannedStartDate: event.plannedStartDate,
@@ -142,6 +129,7 @@ export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, 
 
   const handleSave = () => {
     setOpen(false);
+    setEventData
     onSave(eventData);
   }
 
@@ -245,7 +233,7 @@ export function EventComponent({dashboard, eventCollection, event, edit, setEven
 
       </div>
 
-      <EditEventDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={eventData => setEvent(event.update(eventData))} event={event} />
+      <EditEventDialog open={editDialogOpen} setOpen={setEditDialogOpen} onSave={eventData => setEvent(event.update(eventData))} event={event}/>
 
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <div style={{margin: '1em'}}>
