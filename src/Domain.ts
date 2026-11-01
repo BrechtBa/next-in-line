@@ -180,7 +180,7 @@ export class EventCollection {
     });
   }
 
-  getEvents(finished: boolean): Array<EventInCollection> {
+  getEvents(): Array<EventInCollection> {
     const sortedEvents = this.events.sort(this.eventSorting);
 
     const now = new Date().getTime();
@@ -202,7 +202,7 @@ export class EventCollection {
     const pendingEvents: {[key: string]: number, pending: number} = sortedEvents.reduce(
       (acc, e) => ({...acc, [e.key]: acc.pending, pending: acc.pending + (e.finished ? 0 : 1)}), {pending: 0}
     );
-    return sortedEvents.filter(e => finished || !e.finished).map(e => new EventInCollection(e.key, e, offsetDateEvent.event===null ? null : offsetDateEvent.event.plannedStartDate, delayMsEvent.delay, pendingEvents[e.key] || 0));
+    return sortedEvents.map(e => new EventInCollection(e.key, e, offsetDateEvent.event===null ? null : offsetDateEvent.event.plannedStartDate, delayMsEvent.delay, pendingEvents[e.key] || 0));
   }
 
   private eventSorting(a: Event, b: Event) {

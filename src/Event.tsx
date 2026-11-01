@@ -158,7 +158,7 @@ export function EditEventDialog({open, setOpen, onSave, event}: {open: boolean, 
 }
 
 
-export function EventComponent({dashboard, eventCollection, event, edit, setEvent, deleteEvent}: {dashboard: string, eventCollection: string, event: EventInCollection, edit: boolean, setEvent: (event: Event) => void, deleteEvent: (key: string) => void}) {
+export function EventComponent({dashboard, eventCollection, event, edit, showEventsToGo, setEvent, deleteEvent}: {dashboard: string, eventCollection: string, event: EventInCollection, edit: boolean, showEventsToGo: boolean, setEvent: (event: Event) => void, deleteEvent: (key: string) => void}) {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -196,7 +196,7 @@ export function EventComponent({dashboard, eventCollection, event, edit, setEven
         <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between'}}>
           <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
             <h1 style={{marginTop: 0}}>{event.title}</h1>
-            {!edit && (
+            {!edit && showEventsToGo && (
               <EventsToGo event={event}/>
             )}
               {!edit && (

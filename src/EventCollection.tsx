@@ -72,7 +72,7 @@ function EditCollectionDialog({collection, open, setOpen, onSave}: {collection: 
 }
 
 
-function EventCollectionComponent({dashboard, eventCollection, edit, filterFavorites, setEventCollection}: {dashboard: string, eventCollection: EventCollection, edit: boolean, filterFavorites: boolean, setEventCollection: (collection: EventCollection) => void}) {
+function EventCollectionComponent({dashboard, eventCollection, edit, hideFinished, favoritesOnly: favoritesOnly, setEventCollection}: {dashboard: string, eventCollection: EventCollection, edit: boolean, hideFinished: boolean, favoritesOnly: boolean, setEventCollection: (collection: EventCollection) => void}) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [addEventDialogOpen, setAddEventDialogOpen] = useState(false);
@@ -98,16 +98,6 @@ function EventCollectionComponent({dashboard, eventCollection, edit, filterFavor
   const duplicateCollection = () => {
     useCases.duplicateEventCollection(dashboard, eventCollection.key);
   }
-
-  const eventFilter = (event: Event): boolean =>  {
-    if(edit) {
-      return true;
-    }
-    if(!filterFavorites) {
-      return !event.finished;
-    }
-    return event.isFavorite && !event.finished;
-  } 
 
   return (
     <Paper className='paperEventCollection' style={{flexGrow: collapsed ? 0 : 1, minWidth: collapsed ? '2em' : '8em', maxWidth: '30em'}} >
@@ -146,8 +136,8 @@ function EventCollectionComponent({dashboard, eventCollection, edit, filterFavor
             <h1 style={{marginLeft: '1em', marginTop: 0}}>{eventCollection.title}</h1>
 
             <div>
-              {eventCollection.getEvents(true).filter(eventFilter).map(event => (
-                <EventComponent key={event.key}  dashboard={dashboard} eventCollection={eventCollection.key} event={event} setEvent={setEvent} deleteEvent={deleteEvent} edit={edit}/>
+              {useCases.getCollectionEvents(eventCollection, edit || !hideFinished, !edit && favoritesOnly).map(event => (
+                <EventComponent key={event.key}  dashboard={dashboard} eventCollection={eventCollection.key} event={event} setEvent={setEvent} deleteEvent={deleteEvent} edit={edit} showEventsToGo={favoritesOnly}/>
               ))}
             </div>
 
@@ -198,7 +188,8 @@ export function ViewEventCollections() {
   const [importErrorMessage, setImportErrorMessage] = useState('');
   const [editTokenInput, setEditTokenInput] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [filterFavorites, setFilterFavorites] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [hideFinished, setHideFinished] = useState(true);
 
   useEffect(() => {
     if(dashboard === undefined) {
@@ -309,26 +300,29 @@ export function ViewEventCollections() {
   if(dashboard === undefined) {
     return
   }
-
+  
   return (
     <div>
 
       {!edit && (
         <div style={{width: "100%"}}>
-          <div style={{display: "flex", flexDirection: "row", justifyContent: "flex-end", paddingTop: "1em", paddingRight: "1em"}}>
-            <div>
-              <Button variant={filterFavorites ? "contained" : "outlined"} onClick={()=> setFilterFavorites(v => !v)} 
-                      endIcon={filterFavorites ? <FavoriteIcon style={{color: "red"}}/>: <FavoriteBorderIcon />}>
+          <div style={{display: "flex", flexDirection: "row", justifyContent: "flex-end", paddingTop: "1em", paddingRight: "1em", gap: "1em"}}>
+
+              <Button variant={hideFinished ? "contained" : "outlined"} onClick={()=> setHideFinished(v => !v)}>
+                Hide finished
+              </Button>
+
+              <Button variant={favoritesOnly ? "contained" : "outlined"} onClick={()=> setFavoritesOnly(v => !v)} 
+                      endIcon={favoritesOnly ? <FavoriteIcon style={{color: "red"}}/>: <FavoriteBorderIcon />}>
                 Show favorites only
               </Button>
-            </div>
           </div>
         </div>
       )}
 
       <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>
-        {eventCollections.filter(c => (edit || (c.getEvents(edit).length > 0))).map(collection => (
-          <EventCollectionComponent key={collection.key} dashboard={dashboard} eventCollection={collection} setEventCollection={setEventCollection} edit={edit} filterFavorites={filterFavorites}/>
+        {eventCollections.filter(c => (edit || useCases.getCollectionEvents(c, !hideFinished, favoritesOnly).length > 0)).map(collection => (
+          <EventCollectionComponent key={collection.key} dashboard={dashboard} eventCollection={collection} setEventCollection={setEventCollection} edit={edit} favoritesOnly={favoritesOnly} hideFinished={hideFinished}/>
         ))}
 
         {edit && (

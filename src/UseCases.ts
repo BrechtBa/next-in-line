@@ -1,4 +1,4 @@
-import { Event, EventCollection, type EventCollectionData, type EventData } from "./Domain";
+import { Event, EventCollection, EventInCollection, type EventCollectionData, type EventData } from "./Domain";
 import { getRepository } from "./repository/firebase";
 import { getRepository as getUserDataRepository } from "./repository/userEvent";
 import type { EventRepository, RepositoryEventCollectionData, UserEventRepository } from "./repository/interface";
@@ -168,7 +168,6 @@ class UseCases {
       throw new InvalidInputError("");
     }
     
-    
   }
 
   overwriteEventCollections(dashboard: string, collections: Array<EventCollection>): void {
@@ -203,6 +202,10 @@ class UseCases {
     Object.keys(this.onEventCollectionChangedUnsubscribers).forEach(key => {
       this.onEventCollectionChangedUnsubscribers[key].callback(this.getCollectionsFromRepositoryData(dashboard, this.repositoryCollectionData));
     });
+  }
+
+  getCollectionEvents(eventCollection: EventCollection, showFinished: boolean, favoritesOnly: boolean): Array<EventInCollection> {
+    return eventCollection.getEvents().filter(e => (showFinished || !e.finished) && (!favoritesOnly || e.isFavorite))
   }
 
   private getCollectionsFromRepositoryData(dashboard: string, repositoryCollectionData: Array<RepositoryEventCollectionData>): Array<EventCollection> {
