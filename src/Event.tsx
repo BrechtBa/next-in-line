@@ -83,7 +83,7 @@ function EventDelay({event}: {event: EventInCollection}){
 
   return (
     <div>
-      {(duration > 0) && (<div style={{color: "#b12626", fontWeight: 600}}>{event.started ? "delayed" : "expected delay"}: {formatDuration(duration)}</div>)}
+      {(!event.finished && duration > 0) && (<div style={{color: "#b12626", fontWeight: 600}}>{event.started ? "delayed" : "expected delay"}: {formatDuration(duration)}</div>)}
     </div>
   )
 }
